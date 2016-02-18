@@ -482,11 +482,28 @@ public class DXCCPlanner
     // finds the details of the central location
     private DXCCEntity getMyDXCCEntity()
     {
+	 String usaArea = null;
+	 boolean centerIsUSA = (_dxccCenter.equalsIgnoreCase( "K-Mid") || _dxccCenter.equalsIgnoreCase( "K-East") || _dxccCenter.equalsIgnoreCase( "K-West") );
+	 if (centerIsUSA)
+	 {
+	     usaArea = StringUtils.split(_dxccCenter, '-')[1];
+	 }
+	 
 	 for (DXCCEntity entity :_dxccList)
-	    {
-	     	if (entity.prefix.equalsIgnoreCase(_dxccCenter))
-	     	    return entity;
-	    }
+	 {
+	     if (centerIsUSA)
+	     {
+		 if (entity.prefix.equalsIgnoreCase("K") && StringUtils.containsIgnoreCase(entity.countryName,usaArea))
+		     return entity;
+
+	     }
+	     else
+	     {
+		 if (entity.prefix.equalsIgnoreCase(_dxccCenter))
+		     return entity;
+
+	     }
+	 }
 	 
 	return null;
     }
