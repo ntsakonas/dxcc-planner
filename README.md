@@ -20,7 +20,7 @@ For example, if you are restriced to just a fixed orientation dipole you can use
 if you can put a dipole beaming to azimuths 110/290 and you live in England (DXCC prefix G) you can use this command to evaluate your opportunities with this setup:
 
 ```
-$ ./dcxxplanner.jar -evaluate -center G -headings 280,110
+$ ./dcxxplanner.jar -evaluate -center G -headings 290,110
 ```
 you will see a long detailed printout which summarises as follows:
 
@@ -29,12 +29,12 @@ DXCC entities breakdown per heading
 |---------|------------|---------|------|
 | Heading | Total DXCC | Closest | Rare |
 |---------|------------|---------|------|
-|   280   |    068     |   011   | 010  |
+|   290   |    044     |   010   | 009  |
 |   110   |    085     |   060   | 013  |
 |---------|------------|---------|------|
-Total DXCC countries reachable   : 153
-Total DXCC in closest countries  : 071
-Total rare DXCC reachable        : 023
+Total DXCC countries reachable   : 129
+Total DXCC in closest countries  : 070
+Total rare DXCC reachable        : 022
 Total continent(s) reachable     :   6 [EU, NA, SA, OC, AS, AF]
 ```
 
