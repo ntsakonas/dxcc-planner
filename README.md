@@ -38,11 +38,11 @@ Total rare DXCC reachable        : 023
 Total continent(s) reachable     :   6 [EU, NA, SA, OC, AS, AF]
 ```
 
-if not specified with the command option *-distance* the distance limit to assume a DXCC entity as 'near-by' is 6500 Km, a range that can be reached with 2 hops.Kepp in mind that very close entities (eg <800 Km) may reside in your skip zone and may require an NVIS antenna.
+if not specified with the command option *-distance* the distance limit to assume a DXCC entity as 'near-by' is 6500 Km, a range that can be reached with 2 hops.Keep in mind that very close entities (eg <800 Km) may reside in your skip zone and may require an NVIS antenna.
 
-Since the program does not take into accoutn the band/frequency you intend to you,yu may need to run it with various parameters to see the effect.In the above example if the antenna was not a dipole, but a 44ft doublet , which is usable from 30m up to 10m band, the reachability would be different on each band because the beamwidth of the antenna decreases as the frequency increases.We can run multiple times by specifying the appropriate beamwidth
+Since the program does not take into accoutn the band/frequency you intend to use,you may need to run it with various parameters to see the effect.In the above example if the antenna was not a dipole, but a 44ft doublet , which is usable from 30m up to 10m band, the reachability would be different on each band because the beamwidth of the antenna decreases as the frequency increases.We can run multiple times by specifying the appropriate beamwidth.
 
-for example, on 20m a 44ft doublet has a horizontal beamwidth of around 70 degrees which decreases to 51 degrees and 31 degress on 15m and 10m respectively.To see the difference on DXCC capabilities of this antenna we can run the following commands
+for example, on 20m a 44ft doublet has a horizontal beamwidth of around 70 degrees which decreases to 51 degrees and 31 degress on 15m and 10m respectively.To see the differences on DXCC capabilities of this antenna we can run the following commands
 
 for 20m where beamwidth is 70 degrees
 ```
@@ -100,8 +100,9 @@ Total DXCC in closest countries  : 048
 Total rare DXCC reachable        : 013
 Total continent(s) reachable     :   6 [EU, NA, SA, OC, AS, AF]
 ```
+
 ### Finding an optimal setup
-If you do not know what would be a good setup for your location you can specify a number of headings (assuming for example that you can put up directional antennas to fixed directions) and the programme will find the beamings where the most DXCC entities are located in order to get the most coverage.
+If you do not know what would be a good antenna setup for your location you can specify a number of headings (assuming for example that you can put up directional antennas to fixed directions) and the programme will find the beamings where the most DXCC entities are located in order to get the most coverage.
 
 for example
 ```
@@ -127,7 +128,7 @@ Total continent(s) reachable     :   6 [EU, NA, OC, SA, AS, AF]
 indicating that the prominent headings are 333,251,056 and 142. Note that these headings may not be easily realisable for your available property.
 
 ### Nearest DXCC entities
-if you want to find the nearest DXCC enities no matter their direction You can run the following command
+if you want to find the nearest DXCC enities no matter their direction (maybe because you are thinking about instaling a vertical antenna) you can run the following command
 
 ```
 $ ./dcxxplanner.jar -nearest -center G
