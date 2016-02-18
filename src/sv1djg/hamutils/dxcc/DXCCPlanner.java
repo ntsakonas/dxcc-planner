@@ -210,6 +210,8 @@ public class DXCCPlanner
 	System.out.println("                             set a list of headings to use for evaluate calculation ");
 	System.out.println("       -beamwidth BEAMWIDTH] set the antenna beamwidth to use for optimal calculation");
 	System.out.println("       -center CENTER        set the DXCC entity to use as center (official prefix required, no defaults)");
+	System.out.println("                             For USA you have to use either \"K-East\" or \"K-Mid\" or \"K-West\" to specify");
+	System.out.println("                             the appropriate area.Do not use just K");
 	System.out.println();
 	System.out.println("commands:");
 	System.out.println();
