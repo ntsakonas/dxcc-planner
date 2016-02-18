@@ -46,17 +46,17 @@ for example, on 20m a 44ft doublet has a horizontal beamwidth of around 70 degre
 
 for 20m where beamwidth is 70 degrees
 ```
-$ ./dcxxplanner.jar -evaluate -center G -headings 280,110 -beamwidth 70
+$ ./dcxxplanner.jar -evaluate -center G -headings 290,110 -beamwidth 70
 ```
 
 for 15m where beamwidth is 51 degrees
 ```
-$ ./dcxxplanner.jar -evaluate -center G -headings 280,110 -beamwidth 51
+$ ./dcxxplanner.jar -evaluate -center G -headings 290,110 -beamwidth 51
 ```
 
 for 10m where beamwidth is 31 degrees
 ```
-$ ./dcxxplanner.jar -evaluate -center G -headings 280,110 -beamwidth 31
+$ ./dcxxplanner.jar -evaluate -center G -headings 290,110 -beamwidth 31
 ```
 
 for 20m (beamwidth 70 degrees) the output  will be
@@ -64,12 +64,12 @@ for 20m (beamwidth 70 degrees) the output  will be
 |---------|------------|---------|------|
 | Heading | Total DXCC | Closest | Rare |
 |---------|------------|---------|------|
-|   280   |    071     |   011   | 011  |
+|   290   |    061     |   010   | 010  |
 |   110   |    101     |   066   | 015  |
 |---------|------------|---------|------|
-Total DXCC countries reachable   : 172
-Total DXCC in closest countries  : 077
-Total rare DXCC reachable        : 026
+Total DXCC countries reachable   : 162
+Total DXCC in closest countries  : 076
+Total rare DXCC reachable        : 025
 Total continent(s) reachable     :   6 [EU, NA, SA, OC, AS, AF]
 ```
 
@@ -78,12 +78,12 @@ for 15m (beamwidth 51 degrees) the output  will be
 |---------|------------|---------|------|
 | Heading | Total DXCC | Closest | Rare |
 |---------|------------|---------|------|
-|   280   |    055     |   009   | 010  |
+|   290   |    039     |   010   | 008  |
 |   110   |    073     |   054   | 009  |
 |---------|------------|---------|------|
-Total DXCC countries reachable   : 128
-Total DXCC in closest countries  : 063
-Total rare DXCC reachable        : 019
+Total DXCC countries reachable   : 112
+Total DXCC in closest countries  : 064
+Total rare DXCC reachable        : 017
 Total continent(s) reachable     :   6 [EU, NA, SA, OC, AS, AF]
 ```
 
@@ -92,13 +92,13 @@ for 10m (beamwidth 31 degrees) the output  will be
 |---------|------------|---------|------|
 | Heading | Total DXCC | Closest | Rare |
 |---------|------------|---------|------|
-|   280   |    032     |   008   | 007  |
+|   290   |    018     |   008   | 004  |
 |   110   |    048     |   040   | 006  |
 |---------|------------|---------|------|
-Total DXCC countries reachable   : 080
+Total DXCC countries reachable   : 066
 Total DXCC in closest countries  : 048
-Total rare DXCC reachable        : 013
-Total continent(s) reachable     :   6 [EU, NA, SA, OC, AS, AF]
+Total rare DXCC reachable        : 010
+Total continent(s) reachable     :   5 [EU, NA, OC, AS, AF]
 ```
 
 ### Finding an optimal setup
