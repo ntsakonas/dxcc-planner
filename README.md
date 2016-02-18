@@ -11,8 +11,14 @@ NOTE: The program does not provide propagation predictions. It takes into consid
 
 ## Installation
 Download the dxccplanner.jar and save it on your system.It is an executable jar requiring Java 1.7. 
+on linux systems you will need to give this file executable permissions by executing
+```
+$ chmod +x dxccplanner.jar
+```
+
 Run it with the appropariate options as described below.
 
+NOTE: when specifying the center DXCC prefix use the basic prefix only. As an exception, ONLY For USA you have to use either "K-East" or "K-Mid" or "K-West" to specify the appropriate area.
 
 ## Evaluating your setup
 For example, if you are restriced to just a fixed orientation dipole you can use the program to evaluate which DXCC entities are in the beaming of your antenna by providing the headings of the main lobes and optionally the beamwidth of the dipole (which by default is assumed to be 60 degrees).Here is how you could achieve this:
