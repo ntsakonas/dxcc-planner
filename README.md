@@ -26,7 +26,7 @@ For example, if you are restriced to just a fixed orientation dipole you can use
 if you can put a dipole beaming to azimuths 110/290 and you live in England (DXCC prefix G) you can use this command to evaluate your opportunities with this setup:
 
 ```
-$ ./dcxxplanner.jar -evaluate -center G -headings 290,110
+$ ./dxccplanner.jar -evaluate -center G -headings 290,110
 ```
 you will see a long detailed printout which summarises as follows:
 
@@ -52,17 +52,17 @@ for example, on 20m a 44ft doublet has a horizontal beamwidth of around 70 degre
 
 for 20m where beamwidth is 70 degrees
 ```
-$ ./dcxxplanner.jar -evaluate -center G -headings 290,110 -beamwidth 70
+$ ./dxccplanner.jar -evaluate -center G -headings 290,110 -beamwidth 70
 ```
 
 for 15m where beamwidth is 51 degrees
 ```
-$ ./dcxxplanner.jar -evaluate -center G -headings 290,110 -beamwidth 51
+$ ./dxccplanner.jar -evaluate -center G -headings 290,110 -beamwidth 51
 ```
 
 for 10m where beamwidth is 31 degrees
 ```
-$ ./dcxxplanner.jar -evaluate -center G -headings 290,110 -beamwidth 31
+$ ./dxccplanner.jar -evaluate -center G -headings 290,110 -beamwidth 31
 ```
 
 for 20m (beamwidth 70 degrees) the output  will be
@@ -112,7 +112,7 @@ If you do not know what would be a good antenna setup for your location you can 
 
 for example
 ```
-$ ./dcxxplanner.jar -optimal -center G -headings 4
+$ ./dxccplanner.jar -optimal -center G -headings 4
 ```
 
 the summary will be
@@ -137,14 +137,14 @@ indicating that the prominent headings are 333,251,056 and 142. Note that these 
 if you want to find the nearest DXCC enities no matter their direction (maybe because you are thinking about instaling a vertical antenna) you can run the following command
 
 ```
-$ ./dcxxplanner.jar -nearest -center G
+$ ./dxccplanner.jar -nearest -center G
 ```
 which will print by default the 150 closest DXCC countries (you can override the list size by providing the *-limit* option)
 
 ### example outputs
 Nearest DXCC entities
 ```
-$ ./dcxxplanner.jar -nearest -center G 
+$ ./dxccplanner.jar -nearest -center G 
 Current settings:
 -----------------
 Central DXCC entity       : G (England)
@@ -309,7 +309,7 @@ Total continent(s) reachable     :   5 [EU, AF, NA, AS, SA]
 Optimal setup
 
 ```
-$ ./dcxxplanner.jar -optimal -center G -headings 4
+$ ./dxccplanner.jar -optimal -center G -headings 4
 Current settings:
 -----------------
 Central DXCC entity       : G (England)
@@ -607,7 +607,7 @@ Total continent(s) reachable     :   6 [EU, AF, SA, NA, OC, AS]
 Setup evaluation
 
 ```
-$ ./dcxxplanner.jar -evaluate -center G -headings 280,110 -beamwidth 51
+$ ./dxccplanner.jar -evaluate -center G -headings 280,110 -beamwidth 51
 Current settings:
 -----------------
 Central DXCC entity       : G (England)
