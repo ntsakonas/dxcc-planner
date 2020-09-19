@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Random;
 
 import org.apache.commons.cli.CommandLine;
@@ -57,6 +58,32 @@ public class DXCCPlanner
 	planner.prepareDXCCEntities();
 	
 	planner.displayResults();
+	
+	/*
+	
+	// double range = planner.groundRangeForTakeOffAngle(30.0, 400.0);
+	// double angle = planner.takeOffAngleForGroundRange(2000.0, 500.0);
+	// System.out.println("ground range is "+range+" and angle is "+angle);
+	
+	final double[] heights_hops = new double[]
+		{
+		  50.0 , 1500.0,
+		  100.0, 2200.0,
+		  150.0, 2800.0,
+		  200.0, 3000.0,
+		  300.0, 4000.0,
+		  400.0, 4500.0,
+		  500.0, 5000.0
+		};
+	
+	for (int heightIndex = 0;heightIndex < heights_hops.length; heightIndex +=2)
+	{
+	    double range = planner.groundRangeForTakeOffAngle(3.0, heights_hops[heightIndex]);
+	   System.out.println("max ground range for height "+heights_hops[heightIndex]+" is "+range+" for minimum and angle 3 degrees");
+	   		
+		
+	}
+	*/
     }
 
 
@@ -553,6 +580,8 @@ public class DXCCPlanner
     private void printDXCCDetailsForHeadings(ArrayList<Integer> initialCentroids,ArrayList<AntennaBeamingStatistics> beamingStatistics,ArrayList<String> continents)
     {
 	
+	HashMap<Integer,Integer> takeOffStatistics = new HashMap<Integer,Integer>();
+	
 	for (Integer heading:initialCentroids)
 	{
 	    
@@ -592,6 +621,7 @@ public class DXCCPlanner
 			if (!continents.contains(entity.continent))
 			    continents.add(entity.continent);
 
+			updateTakeOffAngleStatistics(entity.distance,takeOffStatistics);
 		    }
 		}
 	    beamingStatistics.add(headingStats);
@@ -603,8 +633,89 @@ public class DXCCPlanner
 	System.out.println("NOTE: a '*' in the C column indicates a DXCC entity among the "+_maximumNumberOfCountriesToPrint+" closest ones (up to "+_maximumDistanceForClosest+" km)");
 	System.out.println("NOTE: a '!' in the R column indicates a top-"+MOST_WANTED_RANKING+" rare DXCC entity.");
 
+	System.out.println("Angle  - count - %");
+	    
+	int totalCounts = 0;
+	for (Integer takeOffAngle : takeOffStatistics.keySet())
+	{
+	    totalCounts += takeOffStatistics.get(takeOffAngle);
+	}
+	
+	double totalPercent = 0.0;
+	int totalCountries = 0;
+	for (Integer takeOffAngle : takeOffStatistics.keySet())
+	{
+	    double percent  = 100.0 * (double)((double)takeOffStatistics.get(takeOffAngle)/(double)totalCounts);
+	    System.out.println(String.format("   %2d  -   %2d  - %5.2f",takeOffAngle,takeOffStatistics.get(takeOffAngle),percent));
+	    totalPercent += percent;
+	    totalCountries += takeOffStatistics.get(takeOffAngle);
+	}
+	System.out.println("total countries "+totalCountries+" total percent "+totalPercent);
+	
 	
     }
+
+    private void updateTakeOffAngleStatistics(double distance, HashMap<Integer, Integer> takeOffStatistics)
+    {
+	/*
+	 max ground range for height 50.0 is 827.2916927211817 for minimum and angle 5 degrees
+max ground range for height 100.0 is 1388.4434993081672 for minimum and angle 5 degrees
+max ground range for height 150.0 is 1839.5237671663256 for minimum and angle 5 degrees
+max ground range for height 200.0 is 2225.5683006107806 for minimum and angle 5 degrees
+max ground range for height 300.0 is 2875.906836620872 for minimum and angle 5 degrees
+max ground range for height 400.0 is 3421.1137788953224 for minimum and angle 5 degrees
+max ground range for height 500.0 is 3896.0940227280803 for minimum and angle 5 degrees
+
+	 */
+	
+	/*
+	max ground range for height 50.0 is 1057.1318547312312 for minimum and angle 3 degrees
+	max ground range for height 100.0 is 1671.2819306114634 for minimum and angle 3 degrees
+	max ground range for height 150.0 is 2149.105871043595 for minimum and angle 3 degrees
+	max ground range for height 200.0 is 2551.998410199035 for minimum and angle 3 degrees
+	max ground range for height 300.0 is 3223.145193332312 for minimum and angle 3 degrees
+	max ground range for height 400.0 is 3781.1592128909497 for minimum and angle 3 degrees
+	max ground range for height 500.0 is 4265.0464364071295 for minimum and angle 3 degrees
+	*/
+	
+	final double[] heights_hops = new double[]
+		{
+		  50.0 , 1057.0,
+		  100.0, 1671.0,
+		  150.0, 2149.0,
+		  200.0, 2551.0,
+		  300.0, 3223.0,
+		  400.0, 3781.0,
+		  500.0, 4265.0
+		};
+	final int heightIndex = 5;
+	final double height = heights_hops[2 * heightIndex];
+	final int MAX_DISTANCE_PER_HOP = (int)heights_hops[2 * heightIndex+ 1];
+	
+	if (distance > MAX_DISTANCE_PER_HOP)
+	{
+	    int hops = (int)(distance / MAX_DISTANCE_PER_HOP) + 1;
+	    //System.out.println(" -- distance = "+distance+" in "+hops+" hops ->" + distance / hops);
+	    distance = distance / hops;
+	}
+	
+	int takeOffAngle = (int) Math.round(takeOffAngleForGroundRange(distance, height));
+	
+	//if (takeOffAngle < 0)
+	{
+	   // System.out.println(" -- distance "+distance+" gave "+takeOffAngle+" degrees");
+	}
+	
+	if (!takeOffStatistics.containsKey(takeOffAngle))
+	{
+	    takeOffStatistics.put(takeOffAngle, 1);
+	}
+	else
+	{
+	    takeOffStatistics.put(takeOffAngle, takeOffStatistics.get(takeOffAngle) + 1);
+	}
+    }
+
 
     // if two headings are close to form a dipole it hints the user, if one antenna can cover both
     // the margin allowed is +/- 10 degress, if the headings are 170-190 degress apart
@@ -822,5 +933,36 @@ public class DXCCPlanner
 	return updatedCentroids;
     }
 
+    
+
+    //
+    //
+    // Estimation of ground range given height of reflection and take-off angle
+    // (assumes thin layer of reflection, quite realistic but not 100% accurate)
+    //
+    // from Ham Radio Magazine, May 1982,"Antenna geometry for optimum performance",p60-67
+     
+    private double groundRangeForTakeOffAngle(double a,double height)
+    {
+	double b = Math.cos(Math.toRadians(a)) / (1.0 + 0.000157 * height );
+	double groundRange = 222.265 * (Math.toDegrees(Math.acos(b)) - a);
+	return groundRange;
+    }
+    
+    
+    //
+    // the inverse solution of the above formula, giving the required take off angle
+    // to cover a specific ground range given height of reflection
+    //
+    private double takeOffAngleForGroundRange(double range, double height)
+    {
+	final double EARTH_RADIUS_KM = 6367.45;
+	
+	double theta = range / EARTH_RADIUS_KM;
+	double a = EARTH_RADIUS_KM/(EARTH_RADIUS_KM + height);
+	double b = (Math.cos(theta/2.0) - a)/Math.sin(theta/2.0);
+	double takeOffAngle = Math.atan(b);
+	return Math.toDegrees(takeOffAngle);
+    }
 
 }
