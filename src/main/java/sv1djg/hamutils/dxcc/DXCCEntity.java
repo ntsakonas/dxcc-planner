@@ -22,15 +22,21 @@
 /////////////////////////////////////////////////////////////////////////
 package sv1djg.hamutils.dxcc;
 
-public class DXCCEntity
-{
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
-    	public String prefix;
-    	public String countryName;
-    	public String continent;
-    	public double latitude;
-    	public double longitude;
-	public double distance;
-	public double bearing;
-	public int    rankingInMostWanted;
+@AllArgsConstructor
+@ToString
+@EqualsAndHashCode
+public class DXCCEntity {
+
+    public final String prefix;
+    public final String countryName;
+    public final String continent;
+    public final double latitude;
+    public final double longitude;
+    public final double distance;
+    public final double bearing;
+    public final int rankingInMostWanted;
 }

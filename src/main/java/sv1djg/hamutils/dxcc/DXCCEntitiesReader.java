@@ -23,273 +23,142 @@
 
 package sv1djg.hamutils.dxcc;
 
+import com.ntsakonas.javalibs.modjava.types.tuple.Tuple2;
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import ntsakonas.utils.DistanceCalculator;
+
 import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.text.NumberFormat;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import org.apache.commons.lang.StringUtils;
+import static com.ntsakonas.javalibs.modjava.types.tuple.Tuple.tuple;
 
-public class DXCCEntitiesReader
-{
+/**
+ * Reads information from the countries file and extracts the DXCC entities' information.
+ * <p>
+ * The country file is downloaded from http://www.country-files.com/
+ * The original file uses fixed column size and its format is described here: http://www.country-files.com/cty-dat-format/
+ * Different logging programs use different variations and the easiest to use is the CSV version found here http://www.country-files.com/contest/aether/
+ * <p>
+ * The CSV version has the same filed order but it is not fixed width, just comma separated
+ * The field order in the CSV file is as follows:
+ * 1 	Primary DXCC Prefix
+ * 2 	Country Name
+ * 3    DXCC Entity number
+ * 4    2-letter continent abbreviation
+ * 5    CQ Zone
+ * 6    ITU Zone
+ * 7 	Latitude in degrees, + for North
+ * 8    Longitude in degrees, + for West
+ * 9 	Local time offset from GMT
+ * 10   List of additional DXCC prefixes
+ * <p>
+ * NOTE:: the longitude is POSITIVE for WEST longitudes, which is the opposite of what is required for various calculations
+ * so it is reverted when entities are created.
+ */
+public class DXCCEntitiesReader {
 
-    ArrayList<DXCCEntity> _dxccList;
-    private String _countriesFile;
+    private final static String COUNTRY_FILE = "countries.txt";
+    private final static String MOST_WANTED_FILE = "mostwanted.txt";
+    private final static Predicate<String> validSecondaryPrefix = prefix -> !prefix.isEmpty() && !prefix.contains("[") && !prefix.contains("(") && !prefix.startsWith("=");
 
-    ArrayList<DXCCEntity> _mostWantedList;
-    private String _mostWantedFile;
+    @AllArgsConstructor
+    @ToString
+    @EqualsAndHashCode
+    private static class DXCCCountry {
 
-    public DXCCEntitiesReader(String countriesFile,String mostWantedFile)
-    {
-
-	_countriesFile = countriesFile;
-	_dxccList = new ArrayList<DXCCEntity>();
-
-	_mostWantedFile = mostWantedFile;
-	_mostWantedList = new ArrayList<DXCCEntity>();
-
-	readDXCCList();
+        public final String prefix;
+        public final String countryName;
+        public final String continent;
+        public final double latitude;
+        public final double longitude;
     }
 
-    private void readDXCCList()
-    {
-	readCountryFile();
-	readMostWantedFile();
-	updateDXCCEntitiesWithMostWanted();
-	
-	// only for debug reasons
-	//sortCountriesOnRarity();
-	//printList();
-	
-    }
-    
-    private void readCountryFile()
-    {
-	// the country file used is taken from http://www.country-files.com/cty/
-	// the appropriate version is for Aether log
-	//
-	// example entries
-	// SV,Greece,236,EU,20,28,39.78,-21.78,-2.0,J4 SV SW SX SY SZ =SV9DRU/1;
-	// field #1 -> prefix
-	// field #2 -> country name
-	// field #3 -> entity code (not needed)
-	// field #4 -> continent (not needed)
-	// field #5 -> CQ Zone (not needed)
-	// field #6 -> ITU Zone (not needed)
-	// field #7 -> latitude (+ for north, - for south)
-	// field #8 -> longitude(+ for west, - for east)
-	// field #9 -> time diff (not needed)
-	// field #10 -> additional prefixes for this country
-	//
-	// we need fields 1,2,4,7,8
-	// field 8 normally should be negated
 
-	try
-	{
-	    // Open the file (it is embedded in the jar)
-	    InputStream fstream = getClass().getClassLoader().getResourceAsStream(_countriesFile);
+    public static Map<String, DXCCEntity> loadDXCCEntities(String myDXCCPrefix) {
 
-	    // Get the object of DataInputStream
-	    DataInputStream in = new DataInputStream(fstream);
-	    BufferedReader countriesReader = new BufferedReader(new InputStreamReader(in), 65535);
+        Map<String, DXCCCountry> dxccCountries = fileAsStream().andThen(loadDXCCCountries()).apply(COUNTRY_FILE);
+        Map<String, Integer> mostWantedDxccCountries = fileAsStream().andThen(loadMostWantedEntities()).apply(MOST_WANTED_FILE);
+        DXCCCountry myDXCCCountry = Optional.ofNullable(dxccCountries.get(myDXCCPrefix)).orElseThrow(() -> new IllegalArgumentException("Could not find your DXCC entity.make sure that " + myDXCCPrefix + " is correct"));
 
-	    NumberFormat format = NumberFormat.getInstance(Locale.US);
+        // augment the countries with distance and bearing from 'myDXCCCountry' as well as with the most wanted rank
+        return dxccCountries.entrySet().stream()
+                .map(entry -> {
+                    DXCCCountry dxccCountry = entry.getValue();
+                    int dxccMostWantedRanking = mostWantedDxccCountries.getOrDefault(dxccCountry.prefix, 0).intValue();
 
-	    String countryEntry = countriesReader.readLine();
-
-	    while (countryEntry != null)
-	    {
-
-		String[] countryDetails = StringUtils.split(countryEntry, ",");
-		if (countryDetails != null && countryDetails.length >= 9)
-		{
-
-		    DXCCEntity dxccEntity = new DXCCEntity();
-
-		    dxccEntity.prefix = countryDetails[0];
-		    dxccEntity.countryName = countryDetails[1];
-		    dxccEntity.continent = countryDetails[3];
-
-		    dxccEntity.latitude = format.parse(countryDetails[6]).doubleValue();
-		    dxccEntity.longitude = -format.parse(countryDetails[7]).doubleValue();
-
-		    _dxccList.add(dxccEntity);
-
-		}
-
-		countryEntry = countriesReader.readLine();
-	    }
-	    
-	    countriesReader.close();
-
-	} catch (Throwable e)
-	{
-	   e.printStackTrace();
-	}
-
-    }
-    
-    
-    private void readMostWantedFile()
-    {
-	// the most wanted file used is taken http://www.clublog.org/mostwanted.php
-	// and manually cleaned to remove entities' names
-	//
-	// example entries
-	// 1,P5
-	// 2,3Y/B
-	// 3,VP8S
-	//
-	// field #1 -> ranking in most wanted 
-	// field #2 -> prefix
-	//
-	
-	// we read the file and create DXCC entities although not all fields are used
-	
-	try
-	{
-	    // Open the file (it is embedded in the jar)
-	    InputStream fstream = getClass().getClassLoader().getResourceAsStream(_mostWantedFile);
-	  
-	    // Get the object of DataInputStream
-	    DataInputStream in = new DataInputStream(fstream);
-	    BufferedReader countriesReader = new BufferedReader(new InputStreamReader(in), 65535);
-
-	    String countryEntry = countriesReader.readLine();
-
-	    while (countryEntry != null)
-	    {
-
-		String[] countryDetails = StringUtils.split(countryEntry, ",");
-		if (countryDetails != null && countryDetails.length == 2)
-		{
-
-		    DXCCEntity dxccEntity = new DXCCEntity();
-
-		    dxccEntity.rankingInMostWanted = Integer.parseInt(countryDetails[0]);
-		    dxccEntity.prefix = countryDetails[1];
-		  
-		    _mostWantedList.add(dxccEntity);
-
-		}
-
-		countryEntry = countriesReader.readLine();
-	    }
-	    
-	    countriesReader.close();
-
-	} catch (Throwable e)
-	{
-	   e.printStackTrace();
-	}
-
-    }
-    
-    private void updateDXCCEntitiesWithMostWanted()
-    {
-
-	int dxccListCount = _dxccList.size();
-	int wantedDxccCount = _mostWantedList.size();
-	int matchedWantedDxccCount = 0;
-	
-	//System.out.println("Matching DXCC list to most wanted...PASS 1");
-
-	// iterate once and match the most common ones
-	for (DXCCEntity dxccEntity: _dxccList)
-	{
-	    boolean foundMatch = false;
-	    for (DXCCEntity wantedEntity: _mostWantedList)
-	    {
-	      if (wantedEntity.prefix.equalsIgnoreCase(dxccEntity.prefix))
-	      {
-		  dxccEntity.rankingInMostWanted = wantedEntity.rankingInMostWanted;
-		  
-		  matchedWantedDxccCount++;
-		  foundMatch = true;
-		  break;
-	      }
-	    }
-	    
-	  //  if (!foundMatch)
-	  //	System.out.println("-- prefix "+dxccEntity.prefix+" not found in most wanted list");
-	}
-	
-	// iterate a second time and resolve the very specific ones
-	// usually we don't get a match on the first iteration because of small differences like
-	// DXCC -> 5V , most wanted -> 5V7
-	//
-	// so in this iteration we check all the unresolved and check sub-prefixes
-	
-	//System.out.println("Matching DXCC list to most wanted...PASS 2");
-	for (DXCCEntity dxccEntity: _dxccList)
-	{
-	    if (dxccEntity.rankingInMostWanted != 0)
-		continue;
-	    
-	    boolean foundMatch = false;
-	    for (DXCCEntity wantedEntity: _mostWantedList)
-	    {
-		if (StringUtils.startsWithIgnoreCase(StringUtils.remove(wantedEntity.prefix, '/')
-							,StringUtils.remove(dxccEntity.prefix,'/')))
-		{
-		    dxccEntity.rankingInMostWanted = wantedEntity.rankingInMostWanted;
-
-		    matchedWantedDxccCount++;
-		    foundMatch = true;
-		    break;
-		}
-	    }
-
-	   // if (!foundMatch)
-	   //	System.out.println("-- prefix "+dxccEntity.prefix+" not found in most wanted list");
-	}
-	
-	//System.out.println("* Checked "+dxccListCount+" DXCC entities across "+wantedDxccCount+" most wanted and found "+matchedWantedDxccCount+" matches");
+                    return new DXCCEntity(dxccCountry.prefix, dxccCountry.countryName, dxccCountry.continent, dxccCountry.latitude, dxccCountry.longitude,
+                            DistanceCalculator.distanceFrom(myDXCCCountry.latitude, myDXCCCountry.longitude, dxccCountry.latitude, dxccCountry.longitude),
+                            DistanceCalculator.bearingTo(myDXCCCountry.latitude, myDXCCCountry.longitude, dxccCountry.latitude, dxccCountry.longitude), dxccMostWantedRanking
+                    );
+                }).collect(Collectors.toMap(dxccEntity -> dxccEntity.prefix, dxccEntity -> dxccEntity, (dxccEntity1, dxccEntity2) -> dxccEntity1));
     }
 
-    public ArrayList<DXCCEntity> getDXCCList()
-    {
-        return _dxccList;
+    private static Function<InputStream, Map<String, DXCCCountry>> loadDXCCCountries() {
+        return inputStream -> {
+            BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
+            try (Stream<String> countryFile = br.lines()) {
+                return countryFile
+                        .filter(line -> !line.isEmpty())
+                        .map(line -> line.replace(";", ""))
+                        .map(line -> line.split(","))
+                        .map(entityDetails ->
+                                new DXCCCountry(entityDetails[0].toUpperCase(), entityDetails[1], entityDetails[3], Double.parseDouble(entityDetails[6]), Double.parseDouble(entityDetails[7]))
+                        )
+                        // This application des not need the extended prefixes
+                        // .flatMap(entityDetails -> Stream.concat(
+                        //         // the main entity
+                        //         Stream.of(new DXCCCountry(entityDetails[0], entityDetails[1], entityDetails[3], Double.parseDouble(entityDetails[6]), Double.parseDouble(entityDetails[7]))),
+                        //         // the additional entries
+                        //         Stream.of(entityDetails[9].split(" "))
+                        //                 .filter(validSecondaryPrefix::test)
+                        //                 .map(prefix -> new DXCCCountry(prefix, entityDetails[1], entityDetails[3], Double.parseDouble(entityDetails[6]), Double.parseDouble(entityDetails[7])))
+                        //                 .collect(Collectors.toList()).stream()
+                        // ))
+                        .collect(Collectors.toMap(entity -> entity.prefix, entity -> entity, (entity1, entity2) -> entity1));
+            } catch (Throwable e) {
+                return Collections.EMPTY_MAP;
+            }
+        };
     }
-    
+
+    // the most wanted file used is taken http://www.clublog.org/mostwanted.php
+    // and manually cleaned to remove entities' names
     //
-    // for validation purposes only
+    // example entries
+    // 1,P5
+    // 2,3Y/B
+    // 3,VP8S
     //
-    private void sortCountriesOnRarity()
-    {
-
-	Comparator<DXCCEntity> dxccListSorter = new Comparator<DXCCEntity>()
-		{
-
-        	    @Override
-        	    public int compare(DXCCEntity o1, DXCCEntity o2)
-        	    {
-        		if (o1.rankingInMostWanted < o2.rankingInMostWanted)
-        		    return -1;
-        		else if (o1.rankingInMostWanted > o2.rankingInMostWanted)
-        		    return 1;
-        		else
-        		    return 0;
-        	    }
-		};
-
-	Collections.sort(_dxccList, dxccListSorter);
+    // field #1 -> ranking in most wanted
+    // field #2 -> prefix
+    //
+    public static Function<InputStream, Map<String, Integer>> loadMostWantedEntities() {
+        return inputStream -> {
+            BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
+            try (Stream<String> countryFile = br.lines()) {
+                return countryFile
+                        .filter(line -> !line.isEmpty())
+                        .map(line -> line.split(","))
+                        .map((Function<String[], Tuple2<String, Integer>>) entityDetails -> tuple(entityDetails[1].toUpperCase(), Integer.valueOf(entityDetails[0])))
+                        .collect(Collectors.toMap(Tuple2::get_1, Tuple2::get_2, (entity1, entity2) -> entity1));
+            } catch (Throwable e) {
+                return Collections.EMPTY_MAP;
+            }
+        };
     }
 
-    private void printList()
-    {
-	System.out.println("DXCC list sorted on rarity");
-	
-	for (int i=0;i<_dxccList.size();i++)
-	{
-	    DXCCEntity entity = _dxccList.get(i);
-	    System.out.println(String.format("%03d %-5.5s %-40.40s %-2.2s   %8.2f  %03d", entity.rankingInMostWanted,entity.prefix,entity.countryName,entity.continent,entity.distance,(int)entity.bearing));
-	}
+    private static Function<String, InputStream> fileAsStream() {
+        return filename -> (new DXCCEntitiesReader()).getClass().getClassLoader().getResourceAsStream(filename);
     }
+
 }
