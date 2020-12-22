@@ -93,7 +93,7 @@ public class DXCCEntitiesReader
 	try
 	{
 	    // Open the file (it is embedded in the jar)
-	    InputStream fstream = getClass().getResourceAsStream(_countriesFile);
+	    InputStream fstream = getClass().getClassLoader().getResourceAsStream(_countriesFile);
 
 	    // Get the object of DataInputStream
 	    DataInputStream in = new DataInputStream(fstream);
@@ -155,7 +155,7 @@ public class DXCCEntitiesReader
 	try
 	{
 	    // Open the file (it is embedded in the jar)
-	    InputStream fstream = getClass().getResourceAsStream(_mostWantedFile);
+	    InputStream fstream = getClass().getClassLoader().getResourceAsStream(_mostWantedFile);
 	  
 	    // Get the object of DataInputStream
 	    DataInputStream in = new DataInputStream(fstream);

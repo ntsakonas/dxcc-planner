@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Random;
 
+import ntsakonas.utils.DistanceCalculator;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -41,7 +42,6 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang.StringUtils;
 
-import sv1djg.hamutils.distances.DistanceCaclulator;
 
 public class DXCCPlanner
 {
@@ -474,9 +474,9 @@ public class DXCCPlanner
 	    {
 		if (entity.countryName.equalsIgnoreCase(_myDxccEntity.countryName))
 		     continue;
-		     
-	      entity.distance = DistanceCaclulator.distanceFrom(_myDxccEntity.latitude,_myDxccEntity.longitude,entity.latitude,entity.longitude);
-	      entity.bearing = DistanceCaclulator.bearingTo(_myDxccEntity.latitude,_myDxccEntity.longitude,entity.latitude,entity.longitude);
+
+	      entity.distance = DistanceCalculator.distanceFrom(_myDxccEntity.latitude,_myDxccEntity.longitude,entity.latitude,entity.longitude);
+	      entity.bearing = DistanceCalculator.bearingTo(_myDxccEntity.latitude,_myDxccEntity.longitude,entity.latitude,entity.longitude);
 	    }
 	
     }

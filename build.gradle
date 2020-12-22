@@ -1,0 +1,28 @@
+plugins {
+    id 'java'
+    id 'maven-publish'
+}
+
+group 'sv1djg.hamutils.dxcc'
+version '1.0'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    maven {
+        name = "PropagationCore"
+        url = uri("https://maven.pkg.github.com/ntsakonas/propagationn-core")
+        credentials {
+            username = "ntsakonas"
+            password = System.getenv("GITHUB_PUBLISHING_TOKEN")
+        }
+    }
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    compile 'commons-lang:commons-lang:2.6'
+    compile 'commons-cli:commons-cli:1.4'
+    compile 'ntsakonas.propagation:propagation-core:1.2'
+}
