@@ -28,18 +28,15 @@
 
 package sv1djg.hamutils.dxcc;
 
-import ntsakonas.utils.DistanceCalculator;
 import org.apache.commons.cli.*;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 public class DXCCPlanner {
 
-    // the full dxcc list and most wanted dxcc entities are saved into these files
-    private final static String COUNTRY_FILE = "countries.txt";
-    private final static String MOST_WANTED_FILE = "mostwanted.txt";
     // during processing we take into account only the most rare countries
     private final static int MOST_WANTED_RANKING = 50;
     // this is the distance we assume that is easily reachable (well within 2-hops)
@@ -56,15 +53,13 @@ public class DXCCPlanner {
     private int _numberOfBeamings;
     private int _maximumNumberOfCountriesToPrint;
     private int _maximumDistanceForClosest;
-    private ArrayList<DXCCEntity> _dxccList;
+    private List<DXCCEntity> _dxccList;
     private DXCCEntity _myDxccEntity;
-    private String _currentDirectory;
     private int _antennaBeamWidth;
     private int _mode;
     private ArrayList<Integer> _availableBeamings;
 
-    public DXCCPlanner(String currentDirectory) {
-        _currentDirectory = currentDirectory;
+    public DXCCPlanner() {
         _dxccList = new ArrayList<DXCCEntity>();
         _maximumDistanceForClosest = DEFAULT_DIST_FOR_CLOSEST;
         _maximumNumberOfCountriesToPrint = DEFAULT_MAX_CLOSEST_TO_PRINT;
@@ -102,8 +97,7 @@ public class DXCCPlanner {
     private static DXCCPlanner initialisePlanner(String[] args) {
 
         // create planner with default parameters
-        String currentDirectory = System.getProperty("user.dir");
-        DXCCPlanner planner = new DXCCPlanner(currentDirectory);
+        DXCCPlanner planner = new DXCCPlanner();
 
         // add all supported options
         Options options = new Options();
@@ -251,7 +245,8 @@ public class DXCCPlanner {
         if (myDXCCCountry == null || myDXCCCountry.isEmpty())
             throw new IllegalArgumentException("the prefix to use for central location cannot be empty or null");
 
-        _dxccCenter = myDXCCCountry;
+        //FIXME:: all the countries and most wanted are read in uppercase
+        _dxccCenter = myDXCCCountry.toUpperCase();
     }
 
     // used to set how many different and independent beamings the user is able to setup
@@ -314,27 +309,18 @@ public class DXCCPlanner {
         return _mode == EVALUATE_MODE;
     }
 
+    //DONE::
     private void prepareDXCCEntities() {
+        // TODO:: remove this and make it safe
         if (_dxccCenter == null || _dxccCenter.isEmpty())
             throw new IllegalArgumentException("You must set your DXCC country before creating the DXCC List");
 
         if (_numberOfBeamings <= 0)
             throw new IllegalArgumentException("You must set a number of headings before creating the DXCC List");
 
-
         Map<String, DXCCEntity> dxccEntities = DXCCEntitiesReader.loadDXCCEntities(_dxccCenter);
-
-        System.out.println(dxccEntities.get("3Y/B"));
-        System.out.println(dxccEntities.get("FT5/W"));
-
-        copyDXCCList(dxccEntities);
-
-        _myDxccEntity = getMyDXCCEntity();
-
-        if (_myDxccEntity == null)
-            throw new IllegalArgumentException("Could not find your DXCC entity.make sure that \"" + _dxccCenter + "\" is correct");
-
-        sortCountriesAroundMe();
+        _myDxccEntity = Optional.ofNullable(dxccEntities.get(_dxccCenter)).orElseThrow(() -> new IllegalArgumentException("Could not find your DXCC entity.make sure that " + _myDxccEntity + " is correct"));
+        _dxccList = sortCountriesAroundMe(dxccEntities);
     }
 
     private void findMostActiveHeadings() {
@@ -376,55 +362,16 @@ public class DXCCPlanner {
     }
 
 
-
-    // THE NEW METHOD - which will be removed a sit is pointless
-    private void copyDXCCList(Map<String, DXCCEntity> dxccEntities) {
-        for (Map.Entry<String, DXCCEntity> entity : dxccEntities.entrySet())
-            _dxccList.add(entity.getValue());
-    }
-
-
-    private void sortCountriesAroundMe() {
-        // sort the DXCC list based on distance from the central location (my location)
-        // sort ascending
-        Comparator<DXCCEntity> dxccListSorter = new Comparator<DXCCEntity>() {
-
-            @Override
-            public int compare(DXCCEntity o1, DXCCEntity o2) {
-                if (o1.distance < o2.distance)
-                    return -1;
-                else if (o1.distance > o2.distance)
-                    return 1;
-                else
-                    return 0;
-            }
+    private List<DXCCEntity> sortCountriesAroundMe(Map<String, DXCCEntity> dxccEntities) {
+        Comparator<DXCCEntity> byDxccDistanceAscending = (o1, o2) -> {
+            if (o1.distance < o2.distance)
+                return -1;
+            else if (o1.distance > o2.distance)
+                return 1;
+            else
+                return 0;
         };
-
-        Collections.sort(_dxccList, dxccListSorter);
-    }
-
-
-    // finds the details of the central location
-    private DXCCEntity getMyDXCCEntity() {
-        String usaArea = null;
-        boolean centerIsUSA = (_dxccCenter.equalsIgnoreCase("K-Mid") || _dxccCenter.equalsIgnoreCase("K-East") || _dxccCenter.equalsIgnoreCase("K-West"));
-        if (centerIsUSA) {
-            usaArea = StringUtils.split(_dxccCenter, '-')[1];
-        }
-
-        for (DXCCEntity entity : _dxccList) {
-            if (centerIsUSA) {
-                if (entity.prefix.equalsIgnoreCase("K") && StringUtils.containsIgnoreCase(entity.countryName, usaArea))
-                    return entity;
-
-            } else {
-                if (entity.prefix.equalsIgnoreCase(_dxccCenter))
-                    return entity;
-
-            }
-        }
-
-        return null;
+        return dxccEntities.values().stream().sorted(byDxccDistanceAscending).collect(Collectors.toList());
     }
 
     // prints overall statistics for all headings (how many DXCC entities can be reached, how many of them are considered

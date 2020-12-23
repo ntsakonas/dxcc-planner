@@ -26,6 +26,7 @@ package sv1djg.hamutils.dxcc;
 import com.ntsakonas.javalibs.modjava.types.tuple.Tuple2;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.ToString;
 import ntsakonas.utils.DistanceCalculator;
 
@@ -100,7 +101,7 @@ public class DXCCEntitiesReader {
                             DistanceCalculator.distanceFrom(myDXCCCountry.latitude, myDXCCCountry.longitude, dxccCountry.latitude, dxccCountry.longitude),
                             DistanceCalculator.bearingTo(myDXCCCountry.latitude, myDXCCCountry.longitude, dxccCountry.latitude, dxccCountry.longitude), dxccMostWantedRanking
                     );
-                }).collect(Collectors.toMap(dxccEntity -> dxccEntity.prefix, dxccEntity -> dxccEntity, (dxccEntity1, dxccEntity2) -> dxccEntity1));
+                }).collect(Collectors.toMap(dxccEntity -> dxccEntity.prefix, Function.identity(), (dxccEntity1, dxccEntity2) -> dxccEntity1));
     }
 
     private static Function<InputStream, Map<String, DXCCCountry>> loadDXCCCountries() {
@@ -114,18 +115,9 @@ public class DXCCEntitiesReader {
                         .map(entityDetails ->
                                 new DXCCCountry(entityDetails[0].toUpperCase(), entityDetails[1], entityDetails[3], Double.parseDouble(entityDetails[6]), Double.parseDouble(entityDetails[7]))
                         )
-                        // This application des not need the extended prefixes
-                        // .flatMap(entityDetails -> Stream.concat(
-                        //         // the main entity
-                        //         Stream.of(new DXCCCountry(entityDetails[0], entityDetails[1], entityDetails[3], Double.parseDouble(entityDetails[6]), Double.parseDouble(entityDetails[7]))),
-                        //         // the additional entries
-                        //         Stream.of(entityDetails[9].split(" "))
-                        //                 .filter(validSecondaryPrefix::test)
-                        //                 .map(prefix -> new DXCCCountry(prefix, entityDetails[1], entityDetails[3], Double.parseDouble(entityDetails[6]), Double.parseDouble(entityDetails[7])))
-                        //                 .collect(Collectors.toList()).stream()
-                        // ))
-                        .collect(Collectors.toMap(entity -> entity.prefix, entity -> entity, (entity1, entity2) -> entity1));
+                        .collect(Collectors.toMap(entity -> entity.prefix, Function.identity()));//,(entity1, entity2) -> entity1));
             } catch (Throwable e) {
+                e.printStackTrace();
                 return Collections.EMPTY_MAP;
             }
         };
