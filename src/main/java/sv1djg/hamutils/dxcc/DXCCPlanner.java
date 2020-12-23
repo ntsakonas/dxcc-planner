@@ -34,47 +34,35 @@ import java.util.stream.Collectors;
 
 public class DXCCPlanner {
 
-    private List<DXCCEntity> _dxccList;
-    private DXCCEntity _myDxccEntity;
-
-    private final ProgramOptions programOptions;
-
-    public DXCCPlanner(ProgramOptions programOptions) {
-        this.programOptions = programOptions;
-        _dxccList = new ArrayList<>();
-    }
+    // private List<DXCCEntity> _dxccList;
+    // private DXCCEntity _myDxccEntity;
 
     public static void main(String[] args) {
         Optional<ProgramOptions> programOptions = ProgramOptionsProcessor.extractProgramOptions(args);
-        programOptions.ifPresentOrElse(options -> new DXCCPlanner(options).runAnalysis(), () -> ProgramOptionsProcessor.showUsage());
+        programOptions.ifPresentOrElse(options -> new DXCCPlanner().runAnalysis(options), () -> ProgramOptionsProcessor.showUsage());
     }
 
-    public void runAnalysis() {
+    public void runAnalysis(ProgramOptions programOptions) {
         // execute the main  processing
-        prepareDXCCEntities(programOptions);
-        displayResults();
-    }
-
-    private void prepareDXCCEntities(ProgramOptions programOptions) {
         Map<String, DXCCEntity> dxccEntities = DXCCEntitiesReader.loadDXCCEntities(programOptions.getDxccCenter());
-        _myDxccEntity = Optional.ofNullable(dxccEntities.get(programOptions.getDxccCenter())).orElseThrow(() -> new IllegalArgumentException("Could not find your DXCC entity.make sure that " + _myDxccEntity + " is correct"));
-        _dxccList = sortCountriesAroundMe(dxccEntities);
-    }
+        DXCCEntity myDxccEntity = Optional.ofNullable(dxccEntities.get(programOptions.getDxccCenter()))
+                .orElseThrow(() -> new IllegalArgumentException("Could not find your DXCC entity.make sure that " + programOptions.getDxccCenter() + " is correct"));
+        List<DXCCEntity> dxccList = sortCountriesAroundMe(dxccEntities);
 
-
-    private void displayResults() {
         //
         // modes
         // OPTIMAL_MODE  = find optimal setup given the maximum available headings I can have
         // EVALUATE_MODE = evaluate my setup , given my available headings
         // NEAREST_MODE  = print the closest DXCC entities to my location
 
+        printCentralLocationInfo(programOptions, myDxccEntity);
         if (programOptions.getMode() == ProgramOptions.MODE.OPTIMAL)
-            findMostActiveHeadings();
+            findMostActiveHeadings(programOptions, dxccList);
         else if (programOptions.getMode() == ProgramOptions.MODE.NEAREST)
-            printClosestDXCCEntities();
+            printClosestDXCCEntities(programOptions, dxccList, myDxccEntity);
         else if (programOptions.getMode() == ProgramOptions.MODE.EVALUATE)
-            printDXCCEntitiesOnHeadings();
+            printDXCCEntitiesOnHeadings(programOptions,dxccList);
+
     }
 
 
@@ -88,25 +76,24 @@ public class DXCCPlanner {
     }
 
 
-    private void findMostActiveHeadings() {
+    private void findMostActiveHeadings(ProgramOptions programOptions, List<DXCCEntity> dxccList) {
         //
         // cluster all headings up to the maximum number the user requested
         //
-        List<Integer> listOfHeadings = _dxccList
+        List<Integer> listOfHeadings = dxccList
                 .stream()
                 .map(dxccEntity -> (int) dxccEntity.bearing).collect(Collectors.toList());
         List<Integer> headings = Clustering.findHeadingClusters(listOfHeadings, programOptions.getNumberOfBeamings());
 
-        printHeadingsDetails(headings);
+        printHeadingsDetails(headings, programOptions, dxccList);
     }
 
 
-    private void printDXCCEntitiesOnHeadings() {
-        printHeadingsDetails(programOptions.getAvailableBeamings());
+    private void printDXCCEntitiesOnHeadings(ProgramOptions programOptions, List<DXCCEntity> dxccList) {
+        printHeadingsDetails(programOptions.getAvailableBeamings(), programOptions, dxccList);
     }
 
-    private void printHeadingsDetails(List<Integer> headings) {
-        printCentralLocationInfo();
+    private void printHeadingsDetails(List<Integer> headings, ProgramOptions programOptions, List<DXCCEntity> dxccList) {
 
         // print an overview of the optimal headings discovered
         printOptimalHeadingsInfo(headings);
@@ -121,12 +108,11 @@ public class DXCCPlanner {
         ArrayList<String> continents = new ArrayList<String>();
 
 
-        printDXCCDetailsForHeadings(headings, beamingStatistics, continents);
+        printDXCCDetailsForHeadings(headings, beamingStatistics, continents, programOptions, dxccList);
 
         printHeadingStatistics(beamingStatistics, continents);
 
         System.out.println();
-
     }
 
 
@@ -180,7 +166,7 @@ public class DXCCPlanner {
 
     // for each heading discovered, prints statistics (how many DXCC entities can be reached, how many of them are considered
     // nearby (easy) and how many rares and continents can be reached
-    private void printDXCCDetailsForHeadings(List<Integer> initialCentroids, ArrayList<AntennaBeamingStatistics> beamingStatistics, ArrayList<String> continents) {
+    private void printDXCCDetailsForHeadings(List<Integer> initialCentroids, ArrayList<AntennaBeamingStatistics> beamingStatistics, ArrayList<String> continents, ProgramOptions programOptions, List<DXCCEntity> dxccList) {
 
         for (Integer heading : initialCentroids) {
 
@@ -194,9 +180,9 @@ public class DXCCPlanner {
             System.out.println("|---|---|------------------------------------------|--------|------|------------|---------|");
 
 
-            int countryListSize = _dxccList.size();
+            int countryListSize = dxccList.size();
             for (int countryIndex = 0; countryIndex < countryListSize; countryIndex++) {
-                DXCCEntity entity = _dxccList.get(countryIndex);
+                DXCCEntity entity = dxccList.get(countryIndex);
                 if (Math.abs(heading - entity.bearing) <= programOptions.getAntennaBeamWidth() / 2) {
                     System.out.println(String.format("| %c | %c | %-40.40s | %-6.6s |  %-2.2s  |   %8.2f |   %03d   |",
                             (entity.rankingInMostWanted <= programOptions.getNumberOfMostWanted()) ? '!' : ' ',
@@ -266,10 +252,10 @@ public class DXCCPlanner {
     }
 
     // print an overview of the current parameters used for this run
-    private void printCentralLocationInfo() {
+    private void printCentralLocationInfo(ProgramOptions programOptions, DXCCEntity myDxccEntity) {
         System.out.println("Current settings:");
         System.out.println("-----------------");
-        System.out.println(String.format("Central DXCC entity       : %s (%s)", _myDxccEntity.prefix, _myDxccEntity.countryName));
+        System.out.println(String.format("Central DXCC entity       : %s (%s)", myDxccEntity.prefix, myDxccEntity.countryName));
 
         if (programOptions.getMode() == ProgramOptions.MODE.EVALUATE)
             System.out.println(String.format("Beamings to evaluate      : %s", Arrays.toString(programOptions.getAvailableBeamings().toArray())));
@@ -291,9 +277,7 @@ public class DXCCPlanner {
 
 
     // prints up to a maximum number of DXCC entities in increasing distance from the central location
-    private void printClosestDXCCEntities() {
-
-        printCentralLocationInfo();
+    private void printClosestDXCCEntities(ProgramOptions programOptions, List<DXCCEntity> dxccList, DXCCEntity myDxccEntity) {
 
         System.out.println();
         System.out.println(String.format("Displaying up to %d closest DXCC entities (up to %d km)", programOptions.getMaximumNumberOfCountriesToPrint(), programOptions.getMaximumDistanceForClosest()));
@@ -306,7 +290,7 @@ public class DXCCPlanner {
         List<String> continents = new ArrayList<>();
 
         for (int i = 1; i <= programOptions.getMaximumNumberOfCountriesToPrint(); i++) {
-            DXCCEntity entity = _dxccList.get(i);
+            DXCCEntity entity = dxccList.get(i);
             if (entity.distance <= programOptions.getMaximumDistanceForClosest()) {
                 System.out.println(String.format("| %03d | %c | %-40.40s | %-6.6s |  %-2.2s  |   %8.2f |   %03d   |", i, (entity.rankingInMostWanted <= programOptions.getNumberOfMostWanted()) ? '!' : ' ', entity.countryName, entity.prefix, entity.continent, entity.distance, (int) entity.bearing));
 
