@@ -92,7 +92,10 @@ public class DXCCPlanner {
         //
         // cluster all headings up to the maximum number the user requested
         //
-        ArrayList<Integer> headings = findHeadingClusters();
+        List<Integer> listOfHeadings = _dxccList
+                .stream()
+                .map(dxccEntity -> (int) dxccEntity.bearing).collect(Collectors.toList());
+        List<Integer> headings = Clustering.findHeadingClusters(listOfHeadings, programOptions.getNumberOfBeamings());
 
         printHeadingsDetails(headings);
     }
@@ -184,7 +187,7 @@ public class DXCCPlanner {
             AntennaBeamingStatistics headingStats = new AntennaBeamingStatistics();
             headingStats.heading = heading.intValue();
 
-            System.out.println(String.format("DXCC entities around heading of %03d degress (within +/- %d degress from the main heading)", heading.intValue(), programOptions.getAntennaBeamWidth()  / 2));
+            System.out.println(String.format("DXCC entities around heading of %03d degress (within +/- %d degress from the main heading)", heading.intValue(), programOptions.getAntennaBeamWidth() / 2));
 
             System.out.println("|---|---|------------------------------------------|--------|------|------------|---------|");
             System.out.println("| R | C |             DXCC Entity name             | Prefix | Cont |   Distance | Heading |");
@@ -300,7 +303,7 @@ public class DXCCPlanner {
         System.out.println("|-----|---|------------------------------------------|--------|------|------------|---------|");
 
         int totalRareCountriesCovered = 0;
-        ArrayList<String> continents = new ArrayList<String>();
+        List<String> continents = new ArrayList<>();
 
         for (int i = 1; i <= programOptions.getMaximumNumberOfCountriesToPrint(); i++) {
             DXCCEntity entity = _dxccList.get(i);
@@ -325,100 +328,4 @@ public class DXCCPlanner {
 
 
     }
-
-
-    // helper methods for finding clusters based on the beaming of each DXCC (relative to our central location)
-    private ArrayList<Integer> findHeadingClusters() {
-        ArrayList<Integer> headings = new ArrayList<Integer>();
-
-        // put all the headings on a list
-        for (DXCCEntity entity : _dxccList) {
-            Integer heading = (int) entity.bearing;
-            headings.add(heading);
-        }
-
-        //
-        // intialise centroids
-        //
-        // create randomly _numberOfBeamings cluster as a start
-        Random r = new Random();
-
-        int desiredClusters = programOptions.getNumberOfBeamings();
-        ArrayList<Integer> initialCentroids = new ArrayList<Integer>(desiredClusters);
-
-        for (int i = 1; i <= desiredClusters; i++) {
-            int sampleIndex = r.nextInt(headings.size());
-            initialCentroids.add(headings.get(sampleIndex));
-        }
-
-        int MAX_ITERATIONS = 200;
-        for (int iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
-            int[] clusterIndexes = findClosestCentroids(initialCentroids, headings);
-            initialCentroids = computeCentroids(clusterIndexes, initialCentroids.size(), headings);
-
-        }
-
-        return initialCentroids;
-    }
-
-    private int[] findClosestCentroids(ArrayList<Integer> centroids, ArrayList<Integer> headings) {
-        int numberOfClusters = centroids.size();
-        int[] clusterIndexes = new int[headings.size()];
-
-        for (int pointIndex = 0; pointIndex < headings.size(); pointIndex++) {
-            Integer heading = headings.get(pointIndex);
-
-            double[] minimumDistances = new double[numberOfClusters];
-            for (int i = 0; i < numberOfClusters; i++) {
-                double distance = Math.abs(heading - centroids.get(i));
-
-                minimumDistances[i] = distance;
-            }
-
-            // find the index of the minimum distance
-            double minDistance = minimumDistances[0];
-            int clusterIndex = 0;
-
-            for (int i = 0; i < numberOfClusters; i++) {
-                if (minimumDistances[i] < minDistance) {
-                    minDistance = minimumDistances[i];
-                    clusterIndex = i;
-                }
-            }
-
-            clusterIndexes[pointIndex] = clusterIndex;
-        }
-
-        return clusterIndexes;
-    }
-
-
-    private ArrayList<Integer> computeCentroids(int[] clusterIndexes, int desiredClusters, ArrayList<Integer> headings) {
-        ArrayList<Integer> updatedCentroids = new ArrayList<Integer>(desiredClusters);
-
-        for (int clusterNumber = 0; clusterNumber < desiredClusters; clusterNumber++) {
-            int samplesOnThisCentroid = 0;
-            double sum = 0.0;
-
-            for (int i = 0; i < clusterIndexes.length; i++) {
-                int clusterIndex = clusterIndexes[i];
-                if (clusterIndex == clusterNumber) {
-                    samplesOnThisCentroid++;
-
-                    Integer point = headings.get(i);
-                    sum += point.intValue();
-                }
-            }
-
-            double newCentroidSum = (1.0 / (double) samplesOnThisCentroid) * sum;
-
-            Integer newCentroid = (int) newCentroidSum;
-
-            updatedCentroids.add(newCentroid);
-        }
-
-        return updatedCentroids;
-    }
-
-
 }
