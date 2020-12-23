@@ -28,56 +28,39 @@
 
 package sv1djg.hamutils.dxcc;
 
-import org.apache.commons.cli.*;
-import org.apache.commons.lang.StringUtils;
-
 import java.util.*;
 import java.util.stream.Collectors;
 
 
 public class DXCCPlanner {
 
-    // during processing we take into account only the most rare countries
-    private final static int MOST_WANTED_RANKING = 50;
-    // this is the distance we assume that is easily reachable (well within 2-hops)
-    private static final int DEFAULT_DIST_FOR_CLOSEST = 6500;
-    // a limit for display (where applicable)
-    private static final int DEFAULT_MAX_CLOSEST_TO_PRINT = 150;
-    // default antenna to use is one dipole (2 headings, 60 degrees beamwidth)
-    private static final int DEFAULT_DIPLE_BEAMWIDTH = 60;
-    private static final int DEFAULT_NUMBER_OF_HEADINGS = 2;
-    private static final int OPTIMAL_MODE = 1;
-    private static final int NEAREST_MODE = 2;
-    private static final int EVALUATE_MODE = 3;
-    private String _dxccCenter;
-    private int _numberOfBeamings;
-    private int _maximumNumberOfCountriesToPrint;
-    private int _maximumDistanceForClosest;
     private List<DXCCEntity> _dxccList;
     private DXCCEntity _myDxccEntity;
-    private int _antennaBeamWidth;
-    private int _mode;
-    private ArrayList<Integer> _availableBeamings;
 
-    public DXCCPlanner() {
-        _dxccList = new ArrayList<DXCCEntity>();
-        _maximumDistanceForClosest = DEFAULT_DIST_FOR_CLOSEST;
-        _maximumNumberOfCountriesToPrint = DEFAULT_MAX_CLOSEST_TO_PRINT;
-        _antennaBeamWidth = DEFAULT_DIPLE_BEAMWIDTH;
-        _numberOfBeamings = DEFAULT_NUMBER_OF_HEADINGS;
+    private final ProgramOptions programOptions;
+
+    public DXCCPlanner(ProgramOptions programOptions) {
+        this.programOptions = programOptions;
+        _dxccList = new ArrayList<>();
     }
 
     public static void main(String[] args) {
-
-        DXCCPlanner planner = initialisePlanner(args);
-        if (planner == null)
-            return;
-
-        // execute the main  processing
-        planner.prepareDXCCEntities();
-
-        planner.displayResults();
+        Optional<ProgramOptions> programOptions = ProgramOptionsProcessor.extractProgramOptions(args);
+        programOptions.ifPresentOrElse(options -> new DXCCPlanner(options).runAnalysis(), () -> ProgramOptionsProcessor.showUsage());
     }
+
+    public void runAnalysis() {
+        // execute the main  processing
+        prepareDXCCEntities(programOptions);
+        displayResults();
+    }
+
+    private void prepareDXCCEntities(ProgramOptions programOptions) {
+        Map<String, DXCCEntity> dxccEntities = DXCCEntitiesReader.loadDXCCEntities(programOptions.getDxccCenter());
+        _myDxccEntity = Optional.ofNullable(dxccEntities.get(programOptions.getDxccCenter())).orElseThrow(() -> new IllegalArgumentException("Could not find your DXCC entity.make sure that " + _myDxccEntity + " is correct"));
+        _dxccList = sortCountriesAroundMe(dxccEntities);
+    }
+
 
     private void displayResults() {
         //
@@ -86,149 +69,14 @@ public class DXCCPlanner {
         // EVALUATE_MODE = evaluate my setup , given my available headings
         // NEAREST_MODE  = print the closest DXCC entities to my location
 
-        if (_mode == OPTIMAL_MODE)
+        if (programOptions.getMode() == ProgramOptions.MODE.OPTIMAL)
             findMostActiveHeadings();
-        else if (_mode == NEAREST_MODE)
+        else if (programOptions.getMode() == ProgramOptions.MODE.NEAREST)
             printClosestDXCCEntities();
-        else if (_mode == EVALUATE_MODE)
+        else if (programOptions.getMode() == ProgramOptions.MODE.EVALUATE)
             printDXCCEntitiesOnHeadings();
     }
 
-    private static DXCCPlanner initialisePlanner(String[] args) {
-
-        // create planner with default parameters
-        DXCCPlanner planner = new DXCCPlanner();
-
-        // add all supported options
-        Options options = new Options();
-
-        options.addOption("limit", true, "");
-        options.addOption("distance", true, "");
-        options.addOption("headings", true, "");
-        options.addOption("beamwidth", true, "");
-        options.addOption("center", true, "");
-        options.addOption("nearest", false, "");
-        options.addOption("optimal", false, "");
-        options.addOption("evaluate", false, "");
-
-        CommandLineParser parser = new DefaultParser();
-
-        boolean shouldShowUsage = false;
-        try {
-            CommandLine cmd = parser.parse(options, args);
-
-
-            if (!cmd.hasOption("nearest") && !cmd.hasOption("optimal") && !cmd.hasOption("evaluate")) {
-                throw new ParseException("at least one of nearest/optimal/evaluate should be specified");
-            }
-            if (cmd.hasOption("nearest") && cmd.hasOption("optimal") && cmd.hasOption("evaluate")) {
-                throw new ParseException("only one of nearest/optimal/evaluate should be specified");
-            }
-            if (cmd.hasOption("nearest")) {
-                planner.setNearestMode();
-            }
-            if (cmd.hasOption("optimal")) {
-                planner.setOptimalMode();
-            }
-            if (cmd.hasOption("evaluate")) {
-                planner.setEvaluateMode();
-            }
-
-            if (cmd.hasOption("limit")) {
-                planner.setMaximumNumberOfDXCCEntitiesToPrint(Integer.parseInt(cmd.getOptionValue("limit")));
-            }
-            if (cmd.hasOption("distance")) {
-                planner.setClosestCountrieMaxDistance(Integer.parseInt(cmd.getOptionValue("distance")));
-            }
-            if (cmd.hasOption("headings")) {
-                if (planner.isInEvaluateMode()) {
-                    String[] headings = StringUtils.split(cmd.getOptionValue("headings"), ",");
-                    ArrayList<Integer> headingsToEvaluate = new ArrayList<Integer>();
-
-                    for (String h : headings)
-                        headingsToEvaluate.add(Integer.parseInt(h));
-
-                    planner.setBeamings(headingsToEvaluate);
-                } else {
-                    if (StringUtils.contains(cmd.getOptionValue("headings"), ',')) {
-                        throw new IllegalArgumentException("a list of headings is supported only in evaluate mode (use -evaluate option)");
-                    }
-
-                    planner.setNumberOfBeamings(Integer.parseInt(cmd.getOptionValue("headings")));
-                }
-            }
-            if (cmd.hasOption("beamwidth")) {
-                planner.setAntennaBeamwidth(Integer.parseInt(cmd.getOptionValue("beamwidth")));
-            }
-            if (cmd.hasOption("center")) {
-                planner.setDXCCCenter(cmd.getOptionValue("center"));
-            }
-
-
-        } catch (Throwable e) {
-
-            System.out.println("ERROR: " + e.getMessage());
-            System.out.println();
-
-            shouldShowUsage = true;
-        }
-
-
-        if (shouldShowUsage) {
-            showUsage();
-            return null;
-        }
-
-
-        return planner;
-    }
-
-    private static void showUsage() {
-        //System.out.println("=========================================================");
-        System.out.println("DXCC planner v1.0 (by SV1DJG,Feb 2016)                   ");
-        System.out.println("--------------------------------------");
-
-        System.out.println("This program may assist in planning your antennas for making the best usage of your (limited) space and still  ");
-        System.out.println("maximise your opportunities to work as many DXCC entities as possible.You can use it to calculate all the nearest  ");
-        System.out.println("DXCC entities (the easy ones) that are reachable with the minimal setup and can get you started.");
-        System.out.println("The program can also help you out to find the optimal headings that will give you coverage of as many DXCC entities ");
-        System.out.println("as possible.");
-        System.out.println();
-        System.out.println("syntax:");
-        System.out.println();
-        System.out.println("       dxccplanner [-limit LIMIT] [-distance DISTANCE] [-headings HEADINGS] [-beamwidth BEAMWIDTH] -center CENTER -nearest | -optimal | -evaluate");
-        System.out.println();
-        System.out.println("options:");
-        System.out.println();
-        System.out.println("       -limit LIMIT          set upper limit for nearest countries list print (default is 150)");
-        System.out.println("       -distance DISTANCE    set maximum distance considered as 'near-by' (default is 6500 Km)");
-        System.out.println("       -headings HEADINGS]   set number of headings to use for optimal calculation (default is 2)");
-        System.out.println("                             set a list of headings to use for evaluate calculation ");
-        System.out.println("       -beamwidth BEAMWIDTH] set the antenna beamwidth to use for optimal calculation");
-        System.out.println("       -center CENTER        set the DXCC entity to use as center (official prefix required, no defaults)");
-        System.out.println("                             For USA you have to use either \"K-East\" or \"K-Mid\" or \"K-West\" to specify");
-        System.out.println("                             the appropriate area.Do not use just K");
-        System.out.println();
-        System.out.println("commands:");
-        System.out.println();
-        System.out.println("       -nearest 		 display the list of nearest DXCC entities");
-        System.out.println("       -optimal 	         calculate and display the optimal headings");
-        System.out.println("       -evaluate 	         evaluate DXCC coverage for specific headings");
-        System.out.println();
-        System.out.println("examples:");
-        System.out.println();
-        System.out.println("dxccplanner -nearest -limit 150 -distance 5000 -center G");
-        System.out.println("    displays a list of up to 150 nearest DXCC entities with");
-        System.out.println("    within 5000 Km centered a England (prefix G).");
-        System.out.println();
-        System.out.println("dxccplanner -optimal -headings 4 -beamwidth 40 -center G");
-        System.out.println("    displays the 4 optimal headings for an antenna with ");
-        System.out.println("    beamwidth of 40 degrees centered at England (prefix G).");
-        System.out.println();
-        System.out.println("dxccplanner -evaluate -headings 55,165,220 -beamwidth 40 -center G");
-        System.out.println("    displays the possible DXCC coverage using 3 headings at 44,165, and 220 degrees using an antenna with ");
-        System.out.println("    beamwidth of 40 degrees centered at England (prefix G).");
-    }
 
     // used to keep statistics per heading (when the major headings have been found)
     private static class AntennaBeamingStatistics {
@@ -239,89 +87,6 @@ public class DXCCPlanner {
         public int totalRareDxccEntitiesCovered;
     }
 
-    // used to set the prefix of the DXCC entity to use as center
-    // for all calculations
-    public void setDXCCCenter(String myDXCCCountry) {
-        if (myDXCCCountry == null || myDXCCCountry.isEmpty())
-            throw new IllegalArgumentException("the prefix to use for central location cannot be empty or null");
-
-        //FIXME:: all the countries and most wanted are read in uppercase
-        _dxccCenter = myDXCCCountry.toUpperCase();
-    }
-
-    // used to set how many different and independent beamings the user is able to setup
-    //     
-    public void setNumberOfBeamings(int availableBeamings) {
-        if (availableBeamings < 0 || availableBeamings > 36)
-            throw new IllegalArgumentException("the number of beamings should be realistic (larger than 0 but not larger than 36)");
-
-        _numberOfBeamings = availableBeamings;
-    }
-
-    // used to set the beamings to use for evaluate mode
-    //     
-    public void setBeamings(ArrayList<Integer> availableBeamings) {
-        if (availableBeamings == null || availableBeamings.size() == 0 || availableBeamings.size() > 36)
-            throw new IllegalArgumentException("the number of beamings should be realistic (larger than 0 but not larger than 36)");
-
-        _availableBeamings = availableBeamings;
-    }
-
-    // setting the beamwidth of the antenna to be used (this is applied to ALL headings)
-    public void setAntennaBeamwidth(int beamWidth) {
-        if (beamWidth < 5 || beamWidth > 180)
-            throw new IllegalArgumentException("the beamwidth of the antenna should be realistic (larger than 5 degrees but not larger than 180)");
-
-        _antennaBeamWidth = beamWidth;
-    }
-
-    // used to limit the number of entities when printing
-    public void setMaximumNumberOfDXCCEntitiesToPrint(int numberOfCountries) {
-        if (numberOfCountries < 1)
-            throw new IllegalArgumentException("the max number of countries to print cannot be zero or negative");
-
-        _maximumNumberOfCountriesToPrint = numberOfCountries;
-
-    }
-
-    // used to set the distance (in km) that is assumed 'nearby countries'
-    public void setClosestCountrieMaxDistance(int distance) {
-        if (distance < 1 || distance > 15000)
-            throw new IllegalArgumentException("the distance to assume nearby countries should be realistic (larger than 1 Km but not larger than 15000)");
-
-        _maximumDistanceForClosest = distance;
-
-    }
-
-    public void setOptimalMode() {
-        _mode = OPTIMAL_MODE;
-    }
-
-    public void setNearestMode() {
-        _mode = NEAREST_MODE;
-    }
-
-    public void setEvaluateMode() {
-        _mode = EVALUATE_MODE;
-    }
-
-    public boolean isInEvaluateMode() {
-        return _mode == EVALUATE_MODE;
-    }
-
-    //DONE::
-    private void prepareDXCCEntities() {
-        // TODO:: remove this and make it safe
-        if (_dxccCenter == null || _dxccCenter.isEmpty())
-            throw new IllegalArgumentException("You must set your DXCC country before creating the DXCC List");
-
-        if (_numberOfBeamings <= 0)
-            throw new IllegalArgumentException("You must set a number of headings before creating the DXCC List");
-
-        Map<String, DXCCEntity> dxccEntities = DXCCEntitiesReader.loadDXCCEntities(_dxccCenter);
-        _myDxccEntity = Optional.ofNullable(dxccEntities.get(_dxccCenter)).orElseThrow(() -> new IllegalArgumentException("Could not find your DXCC entity.make sure that " + _myDxccEntity + " is correct"));
-        _dxccList = sortCountriesAroundMe(dxccEntities);
-    }
 
     private void findMostActiveHeadings() {
         //
@@ -334,10 +99,10 @@ public class DXCCPlanner {
 
 
     private void printDXCCEntitiesOnHeadings() {
-        printHeadingsDetails(_availableBeamings);
+        printHeadingsDetails(programOptions.getAvailableBeamings());
     }
 
-    private void printHeadingsDetails(ArrayList<Integer> headings) {
+    private void printHeadingsDetails(List<Integer> headings) {
         printCentralLocationInfo();
 
         // print an overview of the optimal headings discovered
@@ -412,14 +177,14 @@ public class DXCCPlanner {
 
     // for each heading discovered, prints statistics (how many DXCC entities can be reached, how many of them are considered
     // nearby (easy) and how many rares and continents can be reached
-    private void printDXCCDetailsForHeadings(ArrayList<Integer> initialCentroids, ArrayList<AntennaBeamingStatistics> beamingStatistics, ArrayList<String> continents) {
+    private void printDXCCDetailsForHeadings(List<Integer> initialCentroids, ArrayList<AntennaBeamingStatistics> beamingStatistics, ArrayList<String> continents) {
 
         for (Integer heading : initialCentroids) {
 
             AntennaBeamingStatistics headingStats = new AntennaBeamingStatistics();
             headingStats.heading = heading.intValue();
 
-            System.out.println(String.format("DXCC entities around heading of %03d degress (within +/- %d degress from the main heading)", heading.intValue(), _antennaBeamWidth / 2));
+            System.out.println(String.format("DXCC entities around heading of %03d degress (within +/- %d degress from the main heading)", heading.intValue(), programOptions.getAntennaBeamWidth()  / 2));
 
             System.out.println("|---|---|------------------------------------------|--------|------|------------|---------|");
             System.out.println("| R | C |             DXCC Entity name             | Prefix | Cont |   Distance | Heading |");
@@ -429,10 +194,10 @@ public class DXCCPlanner {
             int countryListSize = _dxccList.size();
             for (int countryIndex = 0; countryIndex < countryListSize; countryIndex++) {
                 DXCCEntity entity = _dxccList.get(countryIndex);
-                if (Math.abs(heading - entity.bearing) <= _antennaBeamWidth / 2) {
+                if (Math.abs(heading - entity.bearing) <= programOptions.getAntennaBeamWidth() / 2) {
                     System.out.println(String.format("| %c | %c | %-40.40s | %-6.6s |  %-2.2s  |   %8.2f |   %03d   |",
-                            (entity.rankingInMostWanted <= MOST_WANTED_RANKING) ? '!' : ' ',
-                            (entity.distance <= _maximumDistanceForClosest) ? '*' : ' ',
+                            (entity.rankingInMostWanted <= programOptions.getNumberOfMostWanted()) ? '!' : ' ',
+                            (entity.distance <= programOptions.getMaximumDistanceForClosest()) ? '*' : ' ',
                             entity.countryName,
                             entity.prefix,
                             entity.continent,
@@ -441,10 +206,10 @@ public class DXCCPlanner {
 
                     headingStats.totalDxccEntitiesCovered++;
 
-                    if (entity.distance <= _maximumDistanceForClosest)
+                    if (entity.distance <= programOptions.getMaximumDistanceForClosest())
                         headingStats.totalClosestDxccEntitiesCovered++;
 
-                    if (entity.rankingInMostWanted <= MOST_WANTED_RANKING)
+                    if (entity.rankingInMostWanted <= programOptions.getNumberOfMostWanted())
                         headingStats.totalRareDxccEntitiesCovered++;
 
                     if (!continents.contains(entity.continent))
@@ -458,15 +223,15 @@ public class DXCCPlanner {
 
         }
 
-        System.out.println("NOTE: a '*' in the C column indicates a DXCC entity among the " + _maximumNumberOfCountriesToPrint + " closest ones (up to " + _maximumDistanceForClosest + " km)");
-        System.out.println("NOTE: a '!' in the R column indicates a top-" + MOST_WANTED_RANKING + " rare DXCC entity.");
+        System.out.println("NOTE: a '*' in the C column indicates a DXCC entity among the " + programOptions.getMaximumNumberOfCountriesToPrint() + " closest ones (up to " + programOptions.getMaximumDistanceForClosest() + " km)");
+        System.out.println("NOTE: a '!' in the R column indicates a top-" + programOptions.getNumberOfMostWanted() + " rare DXCC entity.");
 
 
     }
 
     // if two headings are close to form a dipole it hints the user, if one antenna can cover both
     // the margin allowed is +/- 10 degress, if the headings are 170-190 degress apart
-    private void printHintsIdHeadingsFormDipoles(ArrayList<Integer> initialCentroids) {
+    private void printHintsIdHeadingsFormDipoles(List<Integer> initialCentroids) {
         // just a small hint:if two lobes form almost a dipole print it out ;-)
         if (initialCentroids.size() > 1) {
             for (int i = 0; i < (initialCentroids.size() - 1); i++) {
@@ -487,7 +252,7 @@ public class DXCCPlanner {
     //
     // print an overview of the optimal headings discovered
     //
-    private void printOptimalHeadingsInfo(ArrayList<Integer> initialCentroids) {
+    private void printOptimalHeadingsInfo(List<Integer> initialCentroids) {
         System.out.println("Main " + initialCentroids.size() + " headings to use for optimal DXCC entities coverage");
         int headingsIndex = 0;
         for (Integer heading : initialCentroids) {
@@ -503,19 +268,19 @@ public class DXCCPlanner {
         System.out.println("-----------------");
         System.out.println(String.format("Central DXCC entity       : %s (%s)", _myDxccEntity.prefix, _myDxccEntity.countryName));
 
-        if (_mode == EVALUATE_MODE)
-            System.out.println(String.format("Beamings to evaluate      : %s", Arrays.toString(_availableBeamings.toArray())));
-        else if (_mode == OPTIMAL_MODE)
-            System.out.println(String.format("Maximum beamings to use   : %d", _numberOfBeamings));
+        if (programOptions.getMode() == ProgramOptions.MODE.EVALUATE)
+            System.out.println(String.format("Beamings to evaluate      : %s", Arrays.toString(programOptions.getAvailableBeamings().toArray())));
+        else if (programOptions.getMode() == ProgramOptions.MODE.OPTIMAL)
+            System.out.println(String.format("Maximum beamings to use   : %d", programOptions.getNumberOfBeamings()));
 
-        if (_mode != NEAREST_MODE)
-            System.out.println(String.format("Antenna beamwidth to use  : %d", _antennaBeamWidth));
+        if (programOptions.getMode() != ProgramOptions.MODE.NEAREST)
+            System.out.println(String.format("Antenna beamwidth to use  : %d", programOptions.getAntennaBeamWidth()));
 
-        System.out.println(String.format("Maximum distance to assume 'close DXCC': %d Km", _maximumDistanceForClosest));
+        System.out.println(String.format("Maximum distance to assume 'close DXCC': %d Km", programOptions.getMaximumDistanceForClosest()));
 
-        if (_mode == NEAREST_MODE)
-            System.out.println(String.format("Maximum DXCC entities to print         : %d", _maximumNumberOfCountriesToPrint));
-        System.out.println(String.format("Maximum rare DXCC entities to use      : %d", MOST_WANTED_RANKING));
+        if (programOptions.getMode() == ProgramOptions.MODE.NEAREST)
+            System.out.println(String.format("Maximum DXCC entities to print         : %d", programOptions.getMaximumNumberOfCountriesToPrint()));
+        System.out.println(String.format("Maximum rare DXCC entities to use      : %d", programOptions.getNumberOfMostWanted()));
 
         System.out.println();
 
@@ -528,7 +293,7 @@ public class DXCCPlanner {
         printCentralLocationInfo();
 
         System.out.println();
-        System.out.println(String.format("Displaying up to %d closest DXCC entities (up to %d km)", _maximumNumberOfCountriesToPrint, _maximumDistanceForClosest));
+        System.out.println(String.format("Displaying up to %d closest DXCC entities (up to %d km)", programOptions.getMaximumNumberOfCountriesToPrint(), programOptions.getMaximumDistanceForClosest()));
 
         System.out.println("|-----|---|------------------------------------------|--------|------|------------|---------|");
         System.out.println("|  #  | R |             DXCC Entity name             | Prefix | Cont |   Distance | Heading |");
@@ -537,12 +302,12 @@ public class DXCCPlanner {
         int totalRareCountriesCovered = 0;
         ArrayList<String> continents = new ArrayList<String>();
 
-        for (int i = 1; i <= _maximumNumberOfCountriesToPrint; i++) {
+        for (int i = 1; i <= programOptions.getMaximumNumberOfCountriesToPrint(); i++) {
             DXCCEntity entity = _dxccList.get(i);
-            if (entity.distance <= _maximumDistanceForClosest) {
-                System.out.println(String.format("| %03d | %c | %-40.40s | %-6.6s |  %-2.2s  |   %8.2f |   %03d   |", i, (entity.rankingInMostWanted <= MOST_WANTED_RANKING) ? '!' : ' ', entity.countryName, entity.prefix, entity.continent, entity.distance, (int) entity.bearing));
+            if (entity.distance <= programOptions.getMaximumDistanceForClosest()) {
+                System.out.println(String.format("| %03d | %c | %-40.40s | %-6.6s |  %-2.2s  |   %8.2f |   %03d   |", i, (entity.rankingInMostWanted <= programOptions.getNumberOfMostWanted()) ? '!' : ' ', entity.countryName, entity.prefix, entity.continent, entity.distance, (int) entity.bearing));
 
-                if (entity.rankingInMostWanted <= MOST_WANTED_RANKING)
+                if (entity.rankingInMostWanted <= programOptions.getNumberOfMostWanted())
                     totalRareCountriesCovered++;
 
                 if (!continents.contains(entity.continent))
@@ -551,7 +316,7 @@ public class DXCCPlanner {
             }
         }
         System.out.println("|-----|---|------------------------------------------|--------|------|------------|---------|");
-        System.out.println("NOTE: a '!' in the R column indicates a top-" + MOST_WANTED_RANKING + " rare DXCC entity.");
+        System.out.println("NOTE: a '!' in the R column indicates a top-" + programOptions.getNumberOfMostWanted() + " rare DXCC entity.");
 
         System.out.println();
 
@@ -578,7 +343,7 @@ public class DXCCPlanner {
         // create randomly _numberOfBeamings cluster as a start
         Random r = new Random();
 
-        int desiredClusters = _numberOfBeamings;
+        int desiredClusters = programOptions.getNumberOfBeamings();
         ArrayList<Integer> initialCentroids = new ArrayList<Integer>(desiredClusters);
 
         for (int i = 1; i <= desiredClusters; i++) {
