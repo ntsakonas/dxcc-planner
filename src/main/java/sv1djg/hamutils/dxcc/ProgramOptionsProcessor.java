@@ -37,18 +37,29 @@ public class ProgramOptionsProcessor {
     // default antenna to use is one dipole (2 headings, 60 degrees beamwidth)
     private static final int DEFAULT_DIPOLE_BEAMWIDTH = 60;
 
+    // program options
+    public static final String LIMIT = "limit";
+    public static final String DISTANCE = "distance";
+    public static final String HEADINGS = "headings";
+    public static final String BEAMWIDTH = "beamwidth";
+    public static final String CENTER = "center";
+    public static final String NEAREST = "nearest";
+    public static final String OPTIMAL = "optimal";
+    public static final String EVALUATE = "evaluate";
+
+
     public static Optional<ProgramOptions> extractProgramOptions(String[] arguments) {
         // add all supported options
         Options options = new Options();
 
-        options.addOption("limit", true, "");
-        options.addOption("distance", true, "");
-        options.addOption("headings", true, "");
-        options.addOption("beamwidth", true, "");
-        options.addOption("center", true, "");
-        options.addOption("nearest", false, "");
-        options.addOption("optimal", false, "");
-        options.addOption("evaluate", false, "");
+        options.addOption(LIMIT, true, "");
+        options.addOption(DISTANCE, true, "");
+        options.addOption(HEADINGS, true, "");
+        options.addOption(BEAMWIDTH, true, "");
+        options.addOption(CENTER, true, "");
+        options.addOption(NEAREST, false, "");
+        options.addOption(OPTIMAL, false, "");
+        options.addOption(EVALUATE, false, "");
 
         CommandLineParser parser = new DefaultParser();
 
@@ -62,47 +73,47 @@ public class ProgramOptionsProcessor {
             builder.numberOfBeamings(DEFAULT_NUMBER_OF_HEADINGS);
             builder.numberOfMostWanted(MOST_WANTED_RANKING);
 
-            if (!cmd.hasOption("nearest") && !cmd.hasOption("optimal") && !cmd.hasOption("evaluate")) {
-                throw new ParseException("at least one of nearest/optimal/evaluate should be specified");
+            if (!cmd.hasOption(NEAREST) && !cmd.hasOption(OPTIMAL) && !cmd.hasOption(EVALUATE)) {
+                throw new ParseException("at least one of " + NEAREST + "/" + OPTIMAL + "/" + EVALUATE + " should be specified");
             }
-            if (cmd.hasOption("nearest") && cmd.hasOption("optimal") && cmd.hasOption("evaluate")) {
-                throw new ParseException("only one of nearest/optimal/evaluate should be specified");
+            if (cmd.hasOption(NEAREST) && cmd.hasOption(OPTIMAL) && cmd.hasOption(EVALUATE)) {
+                throw new ParseException("only one of " + NEAREST + "/" + OPTIMAL + "/" + EVALUATE + " should be specified");
             }
-            if (cmd.hasOption("nearest")) {
+            if (cmd.hasOption(NEAREST)) {
                 builder.mode(ProgramOptions.MODE.NEAREST);
             }
-            if (cmd.hasOption("optimal")) {
+            if (cmd.hasOption(OPTIMAL)) {
                 builder.mode(ProgramOptions.MODE.OPTIMAL);
             }
-            if (cmd.hasOption("evaluate")) {
+            if (cmd.hasOption(EVALUATE)) {
                 builder.mode(ProgramOptions.MODE.EVALUATE);
             }
-            if (cmd.hasOption("limit")) {
-                builder.maximumNumberOfCountriesToPrint(Integer.parseInt(cmd.getOptionValue("limit")));
+            if (cmd.hasOption(LIMIT)) {
+                builder.maximumNumberOfCountriesToPrint(Integer.parseInt(cmd.getOptionValue(LIMIT)));
             }
-            if (cmd.hasOption("distance")) {
-                builder.maximumDistanceForClosest(Integer.parseInt(cmd.getOptionValue("distance")));
+            if (cmd.hasOption(DISTANCE)) {
+                builder.maximumDistanceForClosest(Integer.parseInt(cmd.getOptionValue(DISTANCE)));
             }
-            if (cmd.hasOption("headings")) {
-                if (cmd.hasOption("evaluate")) {
+            if (cmd.hasOption(HEADINGS)) {
+                if (cmd.hasOption(EVALUATE)) {
                     builder.availableBeamings(
-                            Stream.of(StringUtils.split(cmd.getOptionValue("headings"), ","))
+                            Stream.of(StringUtils.split(cmd.getOptionValue(HEADINGS), ","))
                                     .map(Integer::valueOf)
                                     .collect(Collectors.toList()));
 
                 } else {
-                    if (StringUtils.contains(cmd.getOptionValue("headings"), ',')) {
-                        throw new IllegalArgumentException("a list of headings is supported only in evaluate mode (use -evaluate option)");
+                    if (StringUtils.contains(cmd.getOptionValue(HEADINGS), ',')) {
+                        throw new IllegalArgumentException("a list of headings is supported only in evaluate mode (use the -" + EVALUATE + " option)");
                     }
 
-                    builder.numberOfBeamings(Integer.parseInt(cmd.getOptionValue("headings")));
+                    builder.numberOfBeamings(Integer.parseInt(cmd.getOptionValue(HEADINGS)));
                 }
             }
-            if (cmd.hasOption("beamwidth")) {
-                builder.antennaBeamWidth(Integer.parseInt(cmd.getOptionValue("beamwidth")));
+            if (cmd.hasOption(BEAMWIDTH)) {
+                builder.antennaBeamWidth(Integer.parseInt(cmd.getOptionValue(BEAMWIDTH)));
             }
-            if (cmd.hasOption("center")) {
-                builder.dxccCenter(cmd.getOptionValue("center").toUpperCase());
+            if (cmd.hasOption(CENTER)) {
+                builder.dxccCenter(cmd.getOptionValue(CENTER).toUpperCase());
             }
 
             return validate(builder.build());
@@ -153,36 +164,36 @@ public class ProgramOptionsProcessor {
         System.out.println();
         System.out.println("syntax:");
         System.out.println();
-        System.out.println("       dxccplanner [-limit LIMIT] [-distance DISTANCE] [-headings HEADINGS] [-beamwidth BEAMWIDTH] -center CENTER -nearest | -optimal | -evaluate");
+        System.out.println("       dxccplanner [-" + LIMIT + " LIMIT] [-" + DISTANCE + " DISTANCE] [-" + HEADINGS + " HEADINGS] [-" + BEAMWIDTH + " BEAMWIDTH] -" + CENTER + " CENTER -" + NEAREST + " | -" + OPTIMAL + " | -" + EVALUATE + "");
         System.out.println();
         System.out.println("options:");
         System.out.println();
-        System.out.println("       -limit LIMIT          set upper limit for nearest countries list print (default is 150)");
-        System.out.println("       -distance DISTANCE    set maximum distance considered as 'near-by' (default is 6500 Km)");
-        System.out.println("       -headings HEADINGS]   set number of headings to use for optimal calculation (default is 2)");
+        System.out.println("       -" + LIMIT + " LIMIT          set upper limit for nearest countries list print (default is 150)");
+        System.out.println("       -" + DISTANCE + " DISTANCE    set maximum distance considered as 'near-by' (default is 6500 Km)");
+        System.out.println("       -" + HEADINGS + " HEADINGS    set number of headings to use for optimal calculation (default is 2)");
         System.out.println("                             set a list of headings to use for evaluate calculation ");
-        System.out.println("       -beamwidth BEAMWIDTH] set the antenna beamwidth to use for optimal calculation");
-        System.out.println("       -center CENTER        set the DXCC entity to use as center (official prefix required, no defaults)");
+        System.out.println("       -" + BEAMWIDTH + " BEAMWIDTH  set the antenna beamwidth to use for optimal calculation");
+        System.out.println("       -" + CENTER + " CENTER        set the DXCC entity to use as center (official prefix required, no defaults)");
         System.out.println("                             For USA you have to use either \"K-East\" or \"K-Mid\" or \"K-West\" to specify");
         System.out.println("                             the appropriate area.Do not use just K");
         System.out.println();
         System.out.println("commands:");
         System.out.println();
-        System.out.println("       -nearest 		     display the list of nearest DXCC entities");
-        System.out.println("       -optimal 	         calculate and display the optimal headings");
-        System.out.println("       -evaluate 	         evaluate DXCC coverage for specific headings");
+        System.out.println("       -" + NEAREST + " 		     display the list of nearest DXCC entities");
+        System.out.println("       -" + OPTIMAL + " 	         calculate and display the optimal headings");
+        System.out.println("       -" + EVALUATE + " 	         evaluate DXCC coverage for specific headings");
         System.out.println();
         System.out.println("examples:");
         System.out.println();
-        System.out.println("dxccplanner -nearest -limit 150 -distance 5000 -center G");
+        System.out.println("dxccplanner -" + NEAREST + " -" + LIMIT + " 150 -" + DISTANCE + " 5000 -" + CENTER + " G");
         System.out.println("    displays a list of up to 150 nearest DXCC entities with");
         System.out.println("    within 5000 Km centered a England (prefix G).");
         System.out.println();
-        System.out.println("dxccplanner -optimal -headings 4 -beamwidth 40 -center G");
+        System.out.println("dxccplanner -" + OPTIMAL + " -" + HEADINGS + " 4 -" + BEAMWIDTH + " 40 -" + CENTER + " G");
         System.out.println("    displays the 4 optimal headings for an antenna with ");
         System.out.println("    beamwidth of 40 degrees centered at England (prefix G).");
         System.out.println();
-        System.out.println("dxccplanner -evaluate -headings 55,165,220 -beamwidth 40 -center G");
+        System.out.println("dxccplanner -" + EVALUATE + " -" + HEADINGS + " 55,165,220 -" + BEAMWIDTH + " 40 -" + CENTER + " G");
         System.out.println("    displays the possible DXCC coverage using 3 headings at 44,165, and 220 degrees using an antenna with ");
         System.out.println("    beamwidth of 40 degrees centered at England (prefix G).");
     }
