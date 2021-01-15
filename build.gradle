@@ -4,7 +4,7 @@ plugins {
 }
 
 group 'sv1djg.hamutils.dxcc'
-version '1.0'
+version '2.0'
 
 sourceCompatibility = 1.11
 targetCompatibility = 1.11
@@ -26,6 +26,17 @@ dependencies {
     compile 'commons-lang:commons-lang:2.6'
     compile 'commons-cli:commons-cli:1.4'
     compile 'ntsakonas.propagation:propagation-core:1.2'
-    compile 'org.projectlombok:lombok:1.18.12'
-    compile 'io.reactivex.rxjava2:rxjava:2.2.9'
+    compileOnly 'org.projectlombok:lombok:1.18.12'
+}
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'sv1djg.hamutils.dxcc.DXCCPlanner'
+        )
+    }
+
+    from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    }
 }
