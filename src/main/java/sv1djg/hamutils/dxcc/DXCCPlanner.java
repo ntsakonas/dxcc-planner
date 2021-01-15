@@ -76,7 +76,7 @@ public class DXCCPlanner {
     }
 
     private void printClosestDXCCEntities(ProgramOptions programOptions, List<DXCCEntity> entities) {
-        HeadingStatisticsCollector statisticsCollector = HeadingStatisticsCollector.getCollector();
+        HeadingStatisticsCollector statisticsCollector = new HeadingStatisticsCollector(programOptions.getMaximumDistanceForClosest(), programOptions.getNumberOfMostWanted());
 
         ResultPrinter.printClosestDXCCEntities(entities,
                 programOptions.getNumberOfMostWanted(),
@@ -127,7 +127,7 @@ public class DXCCPlanner {
         // if the optimal headings are close to form dipoles, just print a hint for the user
         ResultPrinter.printHintsIfHeadingsFormDipoles(headings);
 
-        HeadingStatisticsCollector statisticsCollector = HeadingStatisticsCollector.getCollector();
+        HeadingStatisticsCollector statisticsCollector = new HeadingStatisticsCollector(programOptions.getMaximumDistanceForClosest(), programOptions.getNumberOfMostWanted());
         ResultPrinter.printDXCCDetailsForHeadings(dxccEntities,
                 programOptions.getNumberOfMostWanted(),
                 programOptions.getMaximumDistanceForClosest(),

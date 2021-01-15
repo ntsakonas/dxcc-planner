@@ -47,7 +47,6 @@ public class ResultPrinter {
         for (Map.Entry<Integer, List<DXCCEntity>> entry : dxccEntitiesPerHeading.entrySet()) {
 
             int heading = entry.getKey().intValue();
-            HeadingStatistics headingStats = statisticsCollector.headingStats(heading);
 
             System.out.println(String.format("DXCC entities around heading of %03d degress (within +/- %d degress from the main heading)", heading, halfAntennaBeamWidth));
 
@@ -66,16 +65,7 @@ public class ResultPrinter {
                         entity.distance,
                         (int) entity.bearing));
 
-                // headingStats.addEntity(entity);
-                headingStats.incrTotalDXCCEntities();
-
-                if (entity.distance <= maxDistance)
-                    headingStats.incrClosestDXCCEntities();
-
-                if (entity.rankingInMostWanted <= maxMostWantedRanking)
-                    headingStats.incrRareDXCCEntities();
-
-                statisticsCollector.addContinent(entity.continent);
+                statisticsCollector.addEntity(heading, entity);
             }
 
             System.out.println("|---|---|------------------------------------------|--------|------|------------|---------|");
@@ -98,7 +88,6 @@ public class ResultPrinter {
         System.out.println("|  #  | R |             DXCC Entity name             | Prefix | Cont |   Distance | Heading |");
         System.out.println("|-----|---|------------------------------------------|--------|------|------------|---------|");
 
-        HeadingStatistics headingStats = statisticsCollector.headingStats(0);
 
         int i = 0;
         for (DXCCEntity entity : dxccList) {
@@ -111,12 +100,7 @@ public class ResultPrinter {
                     entity.distance,
                     (int) entity.bearing));
 
-            if (entity.rankingInMostWanted <= maxMostWantedRanking)
-                headingStats.incrRareDXCCEntities();
-
-            headingStats.incrClosestDXCCEntities();
-            headingStats.incrTotalDXCCEntities();
-            statisticsCollector.addContinent(entity.continent);
+            statisticsCollector.addEntity(0, entity);
         }
         System.out.println("|-----|---|------------------------------------------|--------|------|------------|---------|");
         System.out.println("NOTE: a '!' in the R column indicates a top-" + maxMostWantedRanking + " rare DXCC entity.");

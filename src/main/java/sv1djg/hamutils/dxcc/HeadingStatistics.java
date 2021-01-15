@@ -1,28 +1,16 @@
 package sv1djg.hamutils.dxcc;
 
-// used to keep statistics per heading (when the major headings have been found)
+import lombok.AllArgsConstructor;
+import lombok.Value;
 
+// used to keep statistics per heading
+@AllArgsConstructor
+@Value
 public class HeadingStatistics {
 
-    public int heading;
-    public int totalDxccEntitiesCovered;
-    public int totalClosestDxccEntitiesCovered;
-    public int totalRareDxccEntitiesCovered;
-
-    public HeadingStatistics(int heading) {
-        this.heading = heading;
-    }
-
-    public void incrTotalDXCCEntities() {
-        totalDxccEntitiesCovered++;
-    }
-
-    public void incrClosestDXCCEntities() {
-        totalClosestDxccEntitiesCovered++;
-    }
-
-    public void incrRareDXCCEntities() {
-        totalRareDxccEntitiesCovered++;
-    }
+    public final int heading;
+    public final int totalDxccEntitiesCovered;
+    public final int totalClosestDxccEntitiesCovered;
+    public final int totalRareDxccEntitiesCovered;
 
 }
