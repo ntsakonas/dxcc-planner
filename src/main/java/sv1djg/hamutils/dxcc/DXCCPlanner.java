@@ -1,29 +1,20 @@
-////////////////////////////////////////////////////////////////////////
-//
-// A utility to assist ham radio operators in planning their antennas
-// especially when on limited space.
-//
-// The utility process the current DXCC entities list and a fairly recent 
-// Most-wanted DXCC list to present useful perspectives on the reachability
-// of all the DXCC entities.
-//
-// Please see the usage and examples on how to use it
-//
-// Copyright 2016, Nick Tsakonas, SV1DJG
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-/////////////////////////////////////////////////////////////////////////
+/*
+    DXCC Planner - A utility to assist ham radio operators for optimal antenna setup for best DXCC reachability
+    Copyright (C) 2016-2021, Nick Tsakonas (SV1DJG)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 
 package sv1djg.hamutils.dxcc;

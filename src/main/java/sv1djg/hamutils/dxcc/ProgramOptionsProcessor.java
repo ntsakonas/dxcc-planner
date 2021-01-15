@@ -1,3 +1,21 @@
+/*
+    DXCC Planner - A utility to assist ham radio operators for optimal antenna setup for best DXCC reachability
+    Copyright (C) 2016-2021, Nick Tsakonas (SV1DJG)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 package sv1djg.hamutils.dxcc;
 
 import org.apache.commons.cli.*;
@@ -122,8 +140,10 @@ public class ProgramOptionsProcessor {
 
 
     public static void showUsage() {
-        System.out.println("DXCC planner v2.0 (by SV1DJG,Feb 2016-2021)");
-        System.out.println("--------------------------------------");
+        System.out.println("DXCC planner v2.0 (by SV1DJG, Copyright (C) Feb 2016-2021)");
+        System.out.println("This program comes with ABSOLUTELY NO WARRANTY;");
+        System.out.println("This is free software, and you are welcome to redistribute it under certain conditions;");
+        System.out.println("----------------------------------------------------------");
 
         System.out.println("This program may assist in planning your antennas for making the best usage of your (limited) space and still  ");
         System.out.println("maximise your opportunities to work as many DXCC entities as possible.You can use it to calculate all the nearest  ");
