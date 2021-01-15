@@ -93,17 +93,18 @@ public class ResultPrinter {
 
     }
 
-    // if two headings are close to form a dipole it hints the user, if one antenna can cover both
-    // the margin allowed is +/- 10 degress, if the headings are 170-190 degress apart
-    public static void printHintsIdHeadingsFormDipoles(List<Integer> initialCentroids) {
+    // if two headings are close to form a dipole then hint the user about it.
+    // the main lobes of a dipole are 180 degrees apart, so if we allow a margin of +/- 10 degrees
+    // the we hint the user if the headings are 170-190 degrees apart
+    public static void printHintsIfHeadingsFormDipoles(List<Integer> headings) {
         // just a small hint:if two lobes form almost a dipole print it out ;-)
-        if (initialCentroids.size() > 1) {
-            for (int i = 0; i < (initialCentroids.size() - 1); i++) {
-                for (int j = i + 1; j < initialCentroids.size(); j++) {
-                    Integer heading1 = initialCentroids.get(i);
-                    Integer heading2 = initialCentroids.get(j);
+        if (headings.size() > 1) {
+            for (int i = 0; i < (headings.size() - 1); i++) {
+                for (int j = i + 1; j < headings.size(); j++) {
+                    Integer heading1 = headings.get(i);
+                    Integer heading2 = headings.get(j);
 
-                    // if the headings are 170-190 degress apart, this could be handled with a dipole
+                    // if the headings are 170-190 degrees apart, this could be handled with a dipole
                     // with some compromise
                     if (Math.abs(Math.abs(heading1 - heading2) - 180) < 10) {
                         System.out.println(String.format("HINT: beamings %03d and %03d almost form a dipole", heading1.intValue(), heading2.intValue()));
@@ -111,18 +112,18 @@ public class ResultPrinter {
                 }
             }
         }
+        System.out.println();
     }
 
     //
     // print an overview of the optimal headings discovered
     //
-    public static void printOptimalHeadingsInfo(List<Integer> initialCentroids) {
-        System.out.println("Main " + initialCentroids.size() + " headings to use for optimal DXCC entities coverage");
+    public static void printOptimalHeadingsInfo(List<Integer> headings) {
+        System.out.println("Main " + headings.size() + " headings to use for optimal DXCC entities coverage");
         int headingsIndex = 0;
-        for (Integer heading : initialCentroids) {
+        for (Integer heading : headings) {
             headingsIndex++;
-            System.out.println(String.format("Heading %03d at %03d degrees", headingsIndex, heading.intValue()));
-
+            System.out.println(String.format(" - Heading %03d at %03d degrees", headingsIndex, heading.intValue()));
         }
     }
 
@@ -140,11 +141,11 @@ public class ResultPrinter {
         if (programOptions.getMode() != ProgramOptions.MODE.NEAREST)
             System.out.println(String.format("Antenna beamwidth to use  : %d", programOptions.getAntennaBeamWidth()));
 
-        System.out.println(String.format("Maximum distance to assume 'close DXCC': %d Km", programOptions.getMaximumDistanceForClosest()));
+        System.out.println(String.format("Maximum distance to assume a DXCC entity as a 'close' one : %d Km", programOptions.getMaximumDistanceForClosest()));
 
         if (programOptions.getMode() == ProgramOptions.MODE.NEAREST)
             System.out.println(String.format("Maximum DXCC entities to print         : %d", programOptions.getMaximumNumberOfCountriesToPrint()));
-        System.out.println(String.format("Maximum rare DXCC entities to use      : %d", programOptions.getNumberOfMostWanted()));
+        System.out.println(String.format("Maximum rare DXCC entities to consider     : %d", programOptions.getNumberOfMostWanted()));
 
         System.out.println();
 
@@ -152,7 +153,7 @@ public class ResultPrinter {
 
 
     // prints up to a maximum number of DXCC entities in increasing distance from the central location
-    public static void printClosestDXCCEntities(ProgramOptions programOptions, List<DXCCEntity> dxccList, DXCCEntity myDxccEntity) {
+    public static void printClosestDXCCEntities(ProgramOptions programOptions, List<DXCCEntity> dxccList) {
 
         System.out.println();
         System.out.println(String.format("Displaying up to %d closest DXCC entities (up to %d km)", programOptions.getMaximumNumberOfCountriesToPrint(), programOptions.getMaximumDistanceForClosest()));
@@ -163,19 +164,22 @@ public class ResultPrinter {
 
         int totalRareCountriesCovered = 0;
         List<String> continents = new ArrayList<>();
+        int i = 0;
+        for (DXCCEntity entity : dxccList) {
+            System.out.println(String.format("| %03d | %c | %-40.40s | %-6.6s |  %-2.2s  |   %8.2f |   %03d   |",
+                    ++i,
+                    entity.rankingInMostWanted <= programOptions.getNumberOfMostWanted() ? '!' : ' ',
+                    entity.countryName,
+                    entity.prefix,
+                    entity.continent,
+                    entity.distance,
+                    (int) entity.bearing));
 
-        for (int i = 1; i <= programOptions.getMaximumNumberOfCountriesToPrint(); i++) {
-            DXCCEntity entity = dxccList.get(i);
-            if (entity.distance <= programOptions.getMaximumDistanceForClosest()) {
-                System.out.println(String.format("| %03d | %c | %-40.40s | %-6.6s |  %-2.2s  |   %8.2f |   %03d   |", i, (entity.rankingInMostWanted <= programOptions.getNumberOfMostWanted()) ? '!' : ' ', entity.countryName, entity.prefix, entity.continent, entity.distance, (int) entity.bearing));
+            if (entity.rankingInMostWanted <= programOptions.getNumberOfMostWanted())
+                totalRareCountriesCovered++;
 
-                if (entity.rankingInMostWanted <= programOptions.getNumberOfMostWanted())
-                    totalRareCountriesCovered++;
-
-                if (!continents.contains(entity.continent))
-                    continents.add(entity.continent);
-
-            }
+            if (!continents.contains(entity.continent))
+                continents.add(entity.continent);
         }
         System.out.println("|-----|---|------------------------------------------|--------|------|------------|---------|");
         System.out.println("NOTE: a '!' in the R column indicates a top-" + programOptions.getNumberOfMostWanted() + " rare DXCC entity.");

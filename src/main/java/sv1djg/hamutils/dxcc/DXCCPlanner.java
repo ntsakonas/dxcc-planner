@@ -28,7 +28,10 @@
 
 package sv1djg.hamutils.dxcc;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 
@@ -54,26 +57,30 @@ public class DXCCPlanner {
         // NEAREST_MODE  = print the closest DXCC entities to my location
 
         ResultPrinter.printCentralLocationInfo(programOptions, myDxccEntity);
-        if (programOptions.getMode() == ProgramOptions.MODE.OPTIMAL)
-            findMostActiveHeadings(programOptions, dxccList);
-        else if (programOptions.getMode() == ProgramOptions.MODE.NEAREST)
-            ResultPrinter.printClosestDXCCEntities(programOptions, dxccList, myDxccEntity);
-        else if (programOptions.getMode() == ProgramOptions.MODE.EVALUATE)
-            printDXCCEntitiesOnHeadings(programOptions,dxccList);
+        if (programOptions.getMode() == ProgramOptions.MODE.OPTIMAL) {
+            List<Integer> headings = findMostActiveHeadings(programOptions, dxccList);
+            printHeadingsDetails(headings, programOptions, dxccList);
+        } else if (programOptions.getMode() == ProgramOptions.MODE.NEAREST) {
+            List<DXCCEntity> entities = findClosestDXCCEntities(dxccList, programOptions.getMaximumNumberOfCountriesToPrint(), programOptions.getMaximumDistanceForClosest());
+            ResultPrinter.printClosestDXCCEntities(programOptions, entities);
+        } else if (programOptions.getMode() == ProgramOptions.MODE.EVALUATE)
+            printDXCCEntitiesOnHeadings(programOptions, dxccList);
 
     }
 
 
-    private void findMostActiveHeadings(ProgramOptions programOptions, List<DXCCEntity> dxccList) {
+    private List<Integer> findMostActiveHeadings(ProgramOptions programOptions, List<DXCCEntity> dxccList) {
         //
         // cluster all headings to the DXCC entities up to the maximum number the user requested
         //
         List<Integer> listOfHeadings = dxccList
                 .stream()
                 .map(dxccEntity -> (int) dxccEntity.bearing).collect(Collectors.toList());
-        List<Integer> headings = Clustering.findHeadingClusters(listOfHeadings, programOptions.getNumberOfBeamings());
+        return Clustering.findHeadingClusters(listOfHeadings, programOptions.getNumberOfBeamings());
+    }
 
-        printHeadingsDetails(headings, programOptions, dxccList);
+    private List<DXCCEntity> findClosestDXCCEntities(List<DXCCEntity> dxccList, int maxNumberEntities, int maximumDistance) {
+        return dxccList.stream().filter(dxccEntity -> dxccEntity.distance < maximumDistance).limit(maxNumberEntities).collect(Collectors.toList());
     }
 
 
@@ -87,14 +94,10 @@ public class DXCCPlanner {
         ResultPrinter.printOptimalHeadingsInfo(headings);
 
         // if the optimal headings are close to form dipoles, just print a hint for the user
-        ResultPrinter.printHintsIdHeadingsFormDipoles(headings);
-        System.out.println();
-
-        ArrayList<AntennaBeamingStatistics> beamingStatistics = new ArrayList<AntennaBeamingStatistics>();
-        ArrayList<String> continents = new ArrayList<String>();
+        ResultPrinter.printHintsIfHeadingsFormDipoles(headings);
 
         BeamingStatisticsCollector statisticsCollector = BeamingStatisticsCollector.getCollector();
-        ResultPrinter.printDXCCDetailsForHeadings(headings, programOptions, dxccList,statisticsCollector);
+        ResultPrinter.printDXCCDetailsForHeadings(headings, programOptions, dxccList, statisticsCollector);
         ResultPrinter.printHeadingStatistics(statisticsCollector);
 
         System.out.println();
