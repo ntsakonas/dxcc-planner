@@ -64,16 +64,16 @@ public class DXCCPlanner {
         ResultPrinter.printCentralLocationInfo(programOptions, myDxccEntity);
         if (programOptions.getMode() == ProgramOptions.MODE.OPTIMAL) {
             List<Integer> headings = findMostActiveHeadings(programOptions, dxccList);
-            Map<Integer, List<DXCCEntity>> dxccEntitiesOnHeadings = findDXCCEntitiesOnHeadings(dxccList, headings, programOptions.getAntennaBeamWidth());
-            printHeadingsDetails(headings, programOptions, dxccEntitiesOnHeadings);
+            printDXCCEntitiesOnHeadings(programOptions, dxccList, headings);
+        } else if (programOptions.getMode() == ProgramOptions.MODE.EVALUATE) {
+            List<Integer> headings = programOptions.getAvailableBeamings();
+            printDXCCEntitiesOnHeadings(programOptions, dxccList, headings);
         } else if (programOptions.getMode() == ProgramOptions.MODE.NEAREST) {
             List<DXCCEntity> entities = findClosestDXCCEntities(dxccList, programOptions.getMaximumNumberOfCountriesToPrint(), programOptions.getMaximumDistanceForClosest());
             ResultPrinter.printClosestDXCCEntities(programOptions, entities);
-        } else if (programOptions.getMode() == ProgramOptions.MODE.EVALUATE)
-            printDXCCEntitiesOnHeadings(programOptions, dxccList);
+        }
 
     }
-
 
     private List<Integer> findMostActiveHeadings(ProgramOptions programOptions, List<DXCCEntity> dxccList) {
         //
@@ -95,30 +95,17 @@ public class DXCCPlanner {
     // find all the entities that lie on a heading and within the specified beamwidth (+/- half of the antennaBeamWidth)
     private Map<Integer, List<DXCCEntity>> findDXCCEntitiesOnHeadings(List<DXCCEntity> dxccList, List<Integer> headings, int antennaBeamWidth) {
         final int halfBeamwidth = antennaBeamWidth / 2;
-        Map<Integer, List<DXCCEntity>> collect = headings.stream()
+        return headings.stream()
                 .flatMap(heading -> dxccList.stream()
                         .filter(dxccEntity -> Math.abs(heading - dxccEntity.bearing) <= halfBeamwidth)
                         .map((Function<DXCCEntity, Tuple2<Integer, DXCCEntity>>) dxccEntity -> tuple(heading, dxccEntity))
                 )
-                .collect(Collectors.groupingBy(new Function<Tuple2<Integer, DXCCEntity>, Integer>() {
-
-                    @Override
-                    public Integer apply(Tuple2<Integer, DXCCEntity> integerDXCCEntityTuple2) {
-                        return integerDXCCEntityTuple2.get_1();
-                    }
-                }, Collectors.mapping(new Function<Tuple2<Integer, DXCCEntity>, DXCCEntity>() {
-
-                    @Override
-                    public DXCCEntity apply(Tuple2<Integer, DXCCEntity> integerDXCCEntityTuple2) {
-                        return integerDXCCEntityTuple2.get_2();
-                    }
-                }, Collectors.toList())));
-        return collect;
+                .collect(Collectors.groupingBy(Tuple2::get_1, Collectors.mapping(Tuple2::get_2, Collectors.toList())));
     }
 
-    private void printDXCCEntitiesOnHeadings(ProgramOptions programOptions, List<DXCCEntity> dxccList) {
-        // fixme
-        // printHeadingsDetails(programOptions.getAvailableBeamings(), programOptions, dxccList);
+    private void printDXCCEntitiesOnHeadings(ProgramOptions programOptions, List<DXCCEntity> dxccList, List<Integer> headings) {
+        Map<Integer, List<DXCCEntity>> dxccEntitiesOnHeadings = findDXCCEntitiesOnHeadings(dxccList, headings, programOptions.getAntennaBeamWidth());
+        printHeadingsDetails(headings, programOptions, dxccEntitiesOnHeadings);
     }
 
     private void printHeadingsDetails(List<Integer> headings, ProgramOptions programOptions, Map<Integer, List<DXCCEntity>> dxccEntities) {
