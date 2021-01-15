@@ -55,7 +55,6 @@ public class DXCCPlanner {
                 .orElseThrow(() -> new IllegalArgumentException("Could not find your DXCC entity.make sure that " + programOptions.getDxccCenter() + " is correct"));
         List<DXCCEntity> dxccList = sortCountriesAroundMeByDistance(dxccEntities);
 
-        //
         // modes
         // OPTIMAL_MODE  = find optimal setup given the maximum available headings I can have
         // EVALUATE_MODE = evaluate my setup , given my available headings
@@ -63,26 +62,24 @@ public class DXCCPlanner {
 
         ResultPrinter.printCentralLocationInfo(programOptions, myDxccEntity);
         if (programOptions.getMode() == ProgramOptions.MODE.OPTIMAL) {
-            List<Integer> headings = findMostActiveHeadings(programOptions, dxccList);
+            List<Integer> headings = findMostActiveHeadings(dxccList, programOptions.getNumberOfBeamings());
             printDXCCEntitiesOnHeadings(programOptions, dxccList, headings);
         } else if (programOptions.getMode() == ProgramOptions.MODE.EVALUATE) {
             List<Integer> headings = programOptions.getAvailableBeamings();
             printDXCCEntitiesOnHeadings(programOptions, dxccList, headings);
         } else if (programOptions.getMode() == ProgramOptions.MODE.NEAREST) {
             List<DXCCEntity> entities = findClosestDXCCEntities(dxccList, programOptions.getMaximumNumberOfCountriesToPrint(), programOptions.getMaximumDistanceForClosest());
-            ResultPrinter.printClosestDXCCEntities(programOptions, entities);
+            ResultPrinter.printClosestDXCCEntities(entities, programOptions.getNumberOfMostWanted(), programOptions.getMaximumDistanceForClosest(), programOptions.getMaximumNumberOfCountriesToPrint());
         }
 
     }
 
-    private List<Integer> findMostActiveHeadings(ProgramOptions programOptions, List<DXCCEntity> dxccList) {
-        //
-        // cluster all headings to the DXCC entities up to the maximum number the user requested
-        //
+    // cluster all headings to the DXCC entities up to the maximum number the user requested
+    private List<Integer> findMostActiveHeadings(List<DXCCEntity> dxccList, int numberOfHeadings) {
         List<Integer> listOfHeadings = dxccList.stream()
                 .map(dxccEntity -> (int) dxccEntity.bearing)
                 .collect(Collectors.toList());
-        return Clustering.findHeadingClusters(listOfHeadings, programOptions.getNumberOfBeamings());
+        return Clustering.findHeadingClusters(listOfHeadings, numberOfHeadings);
     }
 
     private List<DXCCEntity> findClosestDXCCEntities(List<DXCCEntity> dxccList, int maxNumberEntities, int maximumDistance) {
@@ -109,7 +106,6 @@ public class DXCCPlanner {
     }
 
     private void printHeadingsDetails(List<Integer> headings, ProgramOptions programOptions, Map<Integer, List<DXCCEntity>> dxccEntities) {
-
         // print an overview of the optimal headings discovered
         ResultPrinter.printOptimalHeadingsInfo(headings);
 
@@ -117,7 +113,12 @@ public class DXCCPlanner {
         ResultPrinter.printHintsIfHeadingsFormDipoles(headings);
 
         BeamingStatisticsCollector statisticsCollector = BeamingStatisticsCollector.getCollector();
-        ResultPrinter.printDXCCDetailsForHeadings(headings, programOptions, dxccEntities, statisticsCollector);
+        ResultPrinter.printDXCCDetailsForHeadings(dxccEntities,
+                programOptions.getNumberOfMostWanted(),
+                programOptions.getMaximumDistanceForClosest(),
+                programOptions.getAntennaBeamWidth() / 2,
+                programOptions.getMaximumNumberOfCountriesToPrint(),
+                statisticsCollector);
         ResultPrinter.printHeadingStatistics(statisticsCollector);
 
         System.out.println();
