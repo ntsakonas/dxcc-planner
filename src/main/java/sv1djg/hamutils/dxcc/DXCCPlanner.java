@@ -28,11 +28,16 @@
 
 package sv1djg.hamutils.dxcc;
 
+import com.ntsakonas.javalibs.modjava.types.tuple.Tuple2;
+
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.ntsakonas.javalibs.modjava.types.tuple.Tuple.tuple;
 
 
 public class DXCCPlanner {
@@ -48,7 +53,7 @@ public class DXCCPlanner {
         Map<String, DXCCEntity> dxccEntities = DXCCEntitiesReader.loadDXCCEntities(programOptions.getDxccCenter());
         DXCCEntity myDxccEntity = Optional.ofNullable(dxccEntities.get(programOptions.getDxccCenter()))
                 .orElseThrow(() -> new IllegalArgumentException("Could not find your DXCC entity.make sure that " + programOptions.getDxccCenter() + " is correct"));
-        List<DXCCEntity> dxccList = sortCountriesAroundMe(dxccEntities);
+        List<DXCCEntity> dxccList = sortCountriesAroundMeByDistance(dxccEntities);
 
         //
         // modes
@@ -59,7 +64,8 @@ public class DXCCPlanner {
         ResultPrinter.printCentralLocationInfo(programOptions, myDxccEntity);
         if (programOptions.getMode() == ProgramOptions.MODE.OPTIMAL) {
             List<Integer> headings = findMostActiveHeadings(programOptions, dxccList);
-            printHeadingsDetails(headings, programOptions, dxccList);
+            Map<Integer, List<DXCCEntity>> dxccEntitiesOnHeadings = findDXCCEntitiesOnHeadings(dxccList, headings, programOptions.getAntennaBeamWidth());
+            printHeadingsDetails(headings, programOptions, dxccEntitiesOnHeadings);
         } else if (programOptions.getMode() == ProgramOptions.MODE.NEAREST) {
             List<DXCCEntity> entities = findClosestDXCCEntities(dxccList, programOptions.getMaximumNumberOfCountriesToPrint(), programOptions.getMaximumDistanceForClosest());
             ResultPrinter.printClosestDXCCEntities(programOptions, entities);
@@ -73,22 +79,49 @@ public class DXCCPlanner {
         //
         // cluster all headings to the DXCC entities up to the maximum number the user requested
         //
-        List<Integer> listOfHeadings = dxccList
-                .stream()
-                .map(dxccEntity -> (int) dxccEntity.bearing).collect(Collectors.toList());
+        List<Integer> listOfHeadings = dxccList.stream()
+                .map(dxccEntity -> (int) dxccEntity.bearing)
+                .collect(Collectors.toList());
         return Clustering.findHeadingClusters(listOfHeadings, programOptions.getNumberOfBeamings());
     }
 
     private List<DXCCEntity> findClosestDXCCEntities(List<DXCCEntity> dxccList, int maxNumberEntities, int maximumDistance) {
-        return dxccList.stream().filter(dxccEntity -> dxccEntity.distance < maximumDistance).limit(maxNumberEntities).collect(Collectors.toList());
+        return dxccList.stream()
+                .filter(dxccEntity -> dxccEntity.distance < maximumDistance)
+                .limit(maxNumberEntities)
+                .collect(Collectors.toList());
     }
 
+    // find all the entities that lie on a heading and within the specified beamwidth (+/- half of the antennaBeamWidth)
+    private Map<Integer, List<DXCCEntity>> findDXCCEntitiesOnHeadings(List<DXCCEntity> dxccList, List<Integer> headings, int antennaBeamWidth) {
+        final int halfBeamwidth = antennaBeamWidth / 2;
+        Map<Integer, List<DXCCEntity>> collect = headings.stream()
+                .flatMap(heading -> dxccList.stream()
+                        .filter(dxccEntity -> Math.abs(heading - dxccEntity.bearing) <= halfBeamwidth)
+                        .map((Function<DXCCEntity, Tuple2<Integer, DXCCEntity>>) dxccEntity -> tuple(heading, dxccEntity))
+                )
+                .collect(Collectors.groupingBy(new Function<Tuple2<Integer, DXCCEntity>, Integer>() {
+
+                    @Override
+                    public Integer apply(Tuple2<Integer, DXCCEntity> integerDXCCEntityTuple2) {
+                        return integerDXCCEntityTuple2.get_1();
+                    }
+                }, Collectors.mapping(new Function<Tuple2<Integer, DXCCEntity>, DXCCEntity>() {
+
+                    @Override
+                    public DXCCEntity apply(Tuple2<Integer, DXCCEntity> integerDXCCEntityTuple2) {
+                        return integerDXCCEntityTuple2.get_2();
+                    }
+                }, Collectors.toList())));
+        return collect;
+    }
 
     private void printDXCCEntitiesOnHeadings(ProgramOptions programOptions, List<DXCCEntity> dxccList) {
-        printHeadingsDetails(programOptions.getAvailableBeamings(), programOptions, dxccList);
+        // fixme
+        // printHeadingsDetails(programOptions.getAvailableBeamings(), programOptions, dxccList);
     }
 
-    private void printHeadingsDetails(List<Integer> headings, ProgramOptions programOptions, List<DXCCEntity> dxccList) {
+    private void printHeadingsDetails(List<Integer> headings, ProgramOptions programOptions, Map<Integer, List<DXCCEntity>> dxccEntities) {
 
         // print an overview of the optimal headings discovered
         ResultPrinter.printOptimalHeadingsInfo(headings);
@@ -97,14 +130,14 @@ public class DXCCPlanner {
         ResultPrinter.printHintsIfHeadingsFormDipoles(headings);
 
         BeamingStatisticsCollector statisticsCollector = BeamingStatisticsCollector.getCollector();
-        ResultPrinter.printDXCCDetailsForHeadings(headings, programOptions, dxccList, statisticsCollector);
+        ResultPrinter.printDXCCDetailsForHeadings(headings, programOptions, dxccEntities, statisticsCollector);
         ResultPrinter.printHeadingStatistics(statisticsCollector);
 
         System.out.println();
     }
 
 
-    private List<DXCCEntity> sortCountriesAroundMe(Map<String, DXCCEntity> dxccEntities) {
+    private List<DXCCEntity> sortCountriesAroundMeByDistance(Map<String, DXCCEntity> dxccEntities) {
         Comparator<DXCCEntity> byDxccDistanceAscending = (o1, o2) -> {
             if (o1.distance < o2.distance)
                 return -1;

@@ -3,6 +3,7 @@ package sv1djg.hamutils.dxcc;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public class ResultPrinter {
 
@@ -44,42 +45,39 @@ public class ResultPrinter {
 
     // for each heading discovered, prints statistics (how many DXCC entities can be reached, how many of them are considered
     // nearby (easy) and how many rares and continents can be reached
-    public static void printDXCCDetailsForHeadings(List<Integer> initialCentroids, ProgramOptions programOptions, List<DXCCEntity> dxccList, BeamingStatisticsCollector statisticsCollector) {
+    public static void printDXCCDetailsForHeadings(List<Integer> headings, ProgramOptions programOptions, Map<Integer, List<DXCCEntity>> dxccEntitiesPerHeading, BeamingStatisticsCollector statisticsCollector) {
 
-        for (Integer heading : initialCentroids) {
+        for (Map.Entry<Integer, List<DXCCEntity>> entry : dxccEntitiesPerHeading.entrySet()) {
 
-            AntennaBeamingStatistics headingStats = statisticsCollector.headingStats(heading.intValue());
+            int heading = entry.getKey().intValue();
+            AntennaBeamingStatistics headingStats = statisticsCollector.headingStats(heading);
 
-            System.out.println(String.format("DXCC entities around heading of %03d degress (within +/- %d degress from the main heading)", heading.intValue(), programOptions.getAntennaBeamWidth() / 2));
+            System.out.println(String.format("DXCC entities around heading of %03d degress (within +/- %d degress from the main heading)", heading, programOptions.getAntennaBeamWidth() / 2));
 
             System.out.println("|---|---|------------------------------------------|--------|------|------------|---------|");
             System.out.println("| R | C |             DXCC Entity name             | Prefix | Cont |   Distance | Heading |");
             System.out.println("|---|---|------------------------------------------|--------|------|------------|---------|");
 
+            List<DXCCEntity> dxccList = entry.getValue();
+            for (DXCCEntity entity : dxccList) {
+                System.out.println(String.format("| %c | %c | %-40.40s | %-6.6s |  %-2.2s  |   %8.2f |   %03d   |",
+                        (entity.rankingInMostWanted <= programOptions.getNumberOfMostWanted()) ? '!' : ' ',
+                        (entity.distance <= programOptions.getMaximumDistanceForClosest()) ? '*' : ' ',
+                        entity.countryName,
+                        entity.prefix,
+                        entity.continent,
+                        entity.distance,
+                        (int) entity.bearing));
 
-            int countryListSize = dxccList.size();
-            for (int countryIndex = 0; countryIndex < countryListSize; countryIndex++) {
-                DXCCEntity entity = dxccList.get(countryIndex);
-                if (Math.abs(heading - entity.bearing) <= programOptions.getAntennaBeamWidth() / 2) {
-                    System.out.println(String.format("| %c | %c | %-40.40s | %-6.6s |  %-2.2s  |   %8.2f |   %03d   |",
-                            (entity.rankingInMostWanted <= programOptions.getNumberOfMostWanted()) ? '!' : ' ',
-                            (entity.distance <= programOptions.getMaximumDistanceForClosest()) ? '*' : ' ',
-                            entity.countryName,
-                            entity.prefix,
-                            entity.continent,
-                            entity.distance,
-                            (int) entity.bearing));
+                headingStats.incrTotalDXCCEntities();
 
-                    headingStats.incrTotalDXCCEntities();
+                if (entity.distance <= programOptions.getMaximumDistanceForClosest())
+                    headingStats.incrClosestDXCCEntities();
 
-                    if (entity.distance <= programOptions.getMaximumDistanceForClosest())
-                        headingStats.incrClosestDXCCEntities();
+                if (entity.rankingInMostWanted <= programOptions.getNumberOfMostWanted())
+                    headingStats.incrRareDXCCEntities();
 
-                    if (entity.rankingInMostWanted <= programOptions.getNumberOfMostWanted())
-                        headingStats.incrRareDXCCEntities();
-
-                    statisticsCollector.addContinent(entity.continent);
-                }
+                statisticsCollector.addContinent(entity.continent);
             }
 
             System.out.println("|---|---|------------------------------------------|--------|------|------------|---------|");
@@ -89,8 +87,7 @@ public class ResultPrinter {
 
         System.out.println("NOTE: a '*' in the C column indicates a DXCC entity among the " + programOptions.getMaximumNumberOfCountriesToPrint() + " closest ones (up to " + programOptions.getMaximumDistanceForClosest() + " km)");
         System.out.println("NOTE: a '!' in the R column indicates a top-" + programOptions.getNumberOfMostWanted() + " rare DXCC entity.");
-
-
+        System.out.println();
     }
 
     // if two headings are close to form a dipole then hint the user about it.
