@@ -42,7 +42,7 @@ public class ResultPrinter {
 
     // for each heading discovered, prints statistics (how many DXCC entities can be reached, how many of them are considered
     // nearby (easy) and how many rares and continents can be reached
-    public static void printDXCCDetailsForHeadings(Map<Integer, List<DXCCEntity>> dxccEntitiesPerHeading, int maxMostWantedRanking, int maxDistance, int halfAntennaBeamWidth, int maxDXCCEntities, BeamingStatisticsCollector statisticsCollector) {
+    public static void printDXCCDetailsForHeadings(Map<Integer, List<DXCCEntity>> dxccEntitiesPerHeading, int maxMostWantedRanking, int maxDistance, int halfAntennaBeamWidth, int maxDXCCEntities, HeadingStatisticsCollector statisticsCollector) {
 
         for (Map.Entry<Integer, List<DXCCEntity>> entry : dxccEntitiesPerHeading.entrySet()) {
 
@@ -89,7 +89,7 @@ public class ResultPrinter {
     }
 
     // prints up to a maximum number of DXCC entities in increasing distance from the central location
-    public static void printClosestDXCCEntities(List<DXCCEntity> dxccList, int maxMostWantedRanking, int maxDistance, int maxDXCCEntities, BeamingStatisticsCollector statisticsCollector) {
+    public static void printClosestDXCCEntities(List<DXCCEntity> dxccList, int maxMostWantedRanking, int maxDistance, int maxDXCCEntities, HeadingStatisticsCollector statisticsCollector) {
 
         System.out.println();
         System.out.println(String.format("Displaying up to %d closest DXCC entities (up to %d km)", maxDXCCEntities, maxDistance));
@@ -147,7 +147,7 @@ public class ResultPrinter {
 
     // prints overall statistics for all headings (how many DXCC entities can be reached, how many of them are considered
     // nearby (easy) and how many rares and continents can be reached
-    public static void printHeadingStatistics(BeamingStatisticsCollector statisticsCollector) {
+    public static void printHeadingStatistics(HeadingStatisticsCollector statisticsCollector) {
         System.out.println(String.format("DXCC entities breakdown per heading"));
 
         System.out.println("|---------|------------|---------|------|");
@@ -164,7 +164,7 @@ public class ResultPrinter {
         printStatisticsSummary(statisticsCollector);
     }
 
-    public static void printStatisticsSummary(BeamingStatisticsCollector statisticsCollector) {
+    public static void printStatisticsSummary(HeadingStatisticsCollector statisticsCollector) {
         // sum up statistics
         int totalCountriesCovered = 0;
         int totalClosestCountriesCovered = 0;

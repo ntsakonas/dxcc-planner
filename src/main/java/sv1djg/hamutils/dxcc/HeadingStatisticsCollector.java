@@ -5,7 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public interface BeamingStatisticsCollector {
+public interface HeadingStatisticsCollector {
 
 
     HeadingStatistics headingStats(int heading);
@@ -16,12 +16,12 @@ public interface BeamingStatisticsCollector {
 
     Set<String> continents();
 
-    static BeamingStatisticsCollector getCollector() {
+    static HeadingStatisticsCollector getCollector() {
 
         List<HeadingStatistics> beamingStatistics = new ArrayList<>();
         Set<String> continentsCovered = new HashSet<>();
 
-        return new BeamingStatisticsCollector() {
+        return new HeadingStatisticsCollector() {
 
             @Override
             public HeadingStatistics headingStats(int heading) {
