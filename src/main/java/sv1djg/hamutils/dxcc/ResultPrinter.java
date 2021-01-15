@@ -1,6 +1,5 @@
 package sv1djg.hamutils.dxcc;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -150,7 +149,7 @@ public class ResultPrinter {
 
 
     // prints up to a maximum number of DXCC entities in increasing distance from the central location
-    public static void printClosestDXCCEntities(List<DXCCEntity> dxccList, int maxMostWantedRanking, int maxDistance, int maxDXCCEntities) {
+    public static void printClosestDXCCEntities(List<DXCCEntity> dxccList, int maxMostWantedRanking, int maxDistance, int maxDXCCEntities, BeamingStatisticsCollector statisticsCollector) {
 
         System.out.println();
         System.out.println(String.format("Displaying up to %d closest DXCC entities (up to %d km)", maxDXCCEntities, maxDistance));
@@ -159,8 +158,8 @@ public class ResultPrinter {
         System.out.println("|  #  | R |             DXCC Entity name             | Prefix | Cont |   Distance | Heading |");
         System.out.println("|-----|---|------------------------------------------|--------|------|------------|---------|");
 
-        int totalRareCountriesCovered = 0;
-        List<String> continents = new ArrayList<>();
+        AntennaBeamingStatistics headingStats = statisticsCollector.headingStats(0);
+
         int i = 0;
         for (DXCCEntity entity : dxccList) {
             System.out.println(String.format("| %03d | %c | %-40.40s | %-6.6s |  %-2.2s  |   %8.2f |   %03d   |",
@@ -173,18 +172,15 @@ public class ResultPrinter {
                     (int) entity.bearing));
 
             if (entity.rankingInMostWanted <= maxMostWantedRanking)
-                totalRareCountriesCovered++;
+                headingStats.incrRareDXCCEntities();
 
-            if (!continents.contains(entity.continent))
-                continents.add(entity.continent);
+            headingStats.incrClosestDXCCEntities();
+            headingStats.incrTotalDXCCEntities();
+            statisticsCollector.addContinent(entity.continent);
         }
         System.out.println("|-----|---|------------------------------------------|--------|------|------------|---------|");
         System.out.println("NOTE: a '!' in the R column indicates a top-" + maxMostWantedRanking + " rare DXCC entity.");
-
         System.out.println();
-
-        System.out.println(String.format("Total rare DXCC reachable        : %03d", totalRareCountriesCovered));
-        System.out.println(String.format("Total continent(s) reachable     : %3d %s", continents.size(), Arrays.toString(continents.toArray())));
     }
 
 }

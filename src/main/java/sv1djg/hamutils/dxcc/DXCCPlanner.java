@@ -69,8 +69,23 @@ public class DXCCPlanner {
             printDXCCEntitiesOnHeadings(programOptions, dxccList, headings);
         } else if (programOptions.getMode() == ProgramOptions.MODE.NEAREST) {
             List<DXCCEntity> entities = findClosestDXCCEntities(dxccList, programOptions.getMaximumNumberOfCountriesToPrint(), programOptions.getMaximumDistanceForClosest());
-            ResultPrinter.printClosestDXCCEntities(entities, programOptions.getNumberOfMostWanted(), programOptions.getMaximumDistanceForClosest(), programOptions.getMaximumNumberOfCountriesToPrint());
+            printClosestDXCCEntities(programOptions, entities);
+
         }
+
+    }
+
+    private void printClosestDXCCEntities(ProgramOptions programOptions, List<DXCCEntity> entities) {
+        BeamingStatisticsCollector statisticsCollector = BeamingStatisticsCollector.getCollector();
+
+        ResultPrinter.printClosestDXCCEntities(entities,
+                programOptions.getNumberOfMostWanted(),
+                programOptions.getMaximumDistanceForClosest(),
+                programOptions.getMaximumNumberOfCountriesToPrint(),
+                statisticsCollector);
+
+        ResultPrinter.printHeadingStatistics(statisticsCollector);
+        System.out.println();
 
     }
 
