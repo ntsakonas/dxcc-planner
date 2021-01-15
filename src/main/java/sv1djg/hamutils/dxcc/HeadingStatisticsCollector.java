@@ -58,7 +58,7 @@ public class HeadingStatisticsCollector {
     }
 
     public Set<String> continents() {
-        return continentsCovered;
+        return Collections.unmodifiableSet(continentsCovered);
     }
 }
 

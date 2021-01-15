@@ -49,7 +49,7 @@ public class DXCCPlanner {
     }
 
     public void runAnalysis(ProgramOptions programOptions) {
-        // execute the main  processing
+
         Map<String, DXCCEntity> dxccEntities = DXCCEntitiesReader.loadDXCCEntities(programOptions.getDxccCenter());
         DXCCEntity myDxccEntity = Optional.ofNullable(dxccEntities.get(programOptions.getDxccCenter()))
                 .orElseThrow(() -> new IllegalArgumentException("Could not find your DXCC entity.make sure that " + programOptions.getDxccCenter() + " is correct"));
@@ -60,7 +60,7 @@ public class DXCCPlanner {
         // EVALUATE_MODE = evaluate my setup , given my available headings
         // NEAREST_MODE  = print the closest DXCC entities to my location
 
-        ResultPrinter.printCentralLocationInfo(programOptions, myDxccEntity);
+        ResultPrinter.printRunSettings(programOptions, myDxccEntity);
         if (programOptions.getMode() == ProgramOptions.MODE.OPTIMAL) {
             List<Integer> headings = findMostActiveHeadings(dxccList, programOptions.getNumberOfBeamings());
             printDXCCEntitiesOnHeadings(programOptions, dxccList, headings);
@@ -70,26 +70,11 @@ public class DXCCPlanner {
         } else if (programOptions.getMode() == ProgramOptions.MODE.NEAREST) {
             List<DXCCEntity> entities = findClosestDXCCEntities(dxccList, programOptions.getMaximumNumberOfCountriesToPrint(), programOptions.getMaximumDistanceForClosest());
             printClosestDXCCEntities(programOptions, entities);
-
         }
 
     }
 
-    private void printClosestDXCCEntities(ProgramOptions programOptions, List<DXCCEntity> entities) {
-        HeadingStatisticsCollector statisticsCollector = new HeadingStatisticsCollector(programOptions.getMaximumDistanceForClosest(), programOptions.getNumberOfMostWanted());
-
-        ResultPrinter.printClosestDXCCEntities(entities,
-                programOptions.getNumberOfMostWanted(),
-                programOptions.getMaximumDistanceForClosest(),
-                programOptions.getMaximumNumberOfCountriesToPrint(),
-                statisticsCollector);
-
-        ResultPrinter.printStatisticsSummary(statisticsCollector);
-        System.out.println();
-
-    }
-
-    // cluster all headings to the DXCC entities up to the maximum number the user requested
+    // cluster the DXCC entities according to their proximity to the maximum number of headings
     private List<Integer> findMostActiveHeadings(List<DXCCEntity> dxccList, int numberOfHeadings) {
         List<Integer> listOfHeadings = dxccList.stream()
                 .map(dxccEntity -> (int) dxccEntity.bearing)
@@ -97,6 +82,8 @@ public class DXCCPlanner {
         return Clustering.findHeadingClusters(listOfHeadings, numberOfHeadings);
     }
 
+    // get up to N entities that lie up to M km from my own location
+    // the list of entities is sorted by distance ascending (from my own location)
     private List<DXCCEntity> findClosestDXCCEntities(List<DXCCEntity> dxccList, int maxNumberEntities, int maximumDistance) {
         return dxccList.stream()
                 .filter(dxccEntity -> dxccEntity.distance < maximumDistance)
@@ -104,7 +91,7 @@ public class DXCCPlanner {
                 .collect(Collectors.toList());
     }
 
-    // find all the entities that lie on a heading and within the specified beamwidth (+/- half of the antennaBeamWidth)
+    // find all the entities that lie on a heading (or within the specified beamwidth (+/- half of the antennaBeamWidth))
     private Map<Integer, List<DXCCEntity>> findDXCCEntitiesOnHeadings(List<DXCCEntity> dxccList, List<Integer> headings, int antennaBeamWidth) {
         final int halfBeamwidth = antennaBeamWidth / 2;
         return headings.stream()
@@ -139,6 +126,18 @@ public class DXCCPlanner {
         System.out.println();
     }
 
+    private void printClosestDXCCEntities(ProgramOptions programOptions, List<DXCCEntity> entities) {
+        HeadingStatisticsCollector statisticsCollector = new HeadingStatisticsCollector(programOptions.getMaximumDistanceForClosest(), programOptions.getNumberOfMostWanted());
+
+        ResultPrinter.printClosestDXCCEntities(entities,
+                programOptions.getNumberOfMostWanted(),
+                programOptions.getMaximumDistanceForClosest(),
+                programOptions.getMaximumNumberOfCountriesToPrint(),
+                statisticsCollector);
+
+        ResultPrinter.printStatisticsSummary(statisticsCollector);
+        System.out.println();
+    }
 
     private List<DXCCEntity> sortCountriesAroundMeByDistance(Map<String, DXCCEntity> dxccEntities) {
         Comparator<DXCCEntity> byDxccDistanceAscending = (o1, o2) -> {

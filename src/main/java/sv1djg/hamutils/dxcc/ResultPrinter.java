@@ -7,7 +7,7 @@ import java.util.Map;
 public class ResultPrinter {
 
     // print an overview of the current parameters used for this run
-    public static void printCentralLocationInfo(ProgramOptions programOptions, DXCCEntity myDxccEntity) {
+    public static void printRunSettings(ProgramOptions programOptions, DXCCEntity myDxccEntity) {
         System.out.println("Current settings:");
         System.out.println("-----------------");
         System.out.println(String.format("Central DXCC entity       : %s (%s)", myDxccEntity.prefix, myDxccEntity.countryName));
@@ -40,8 +40,8 @@ public class ResultPrinter {
         }
     }
 
-    // for each heading discovered, prints statistics (how many DXCC entities can be reached, how many of them are considered
-    // nearby (easy) and how many rares and continents can be reached
+    // for each heading discovered, prints details of the DXCC entities that lie on that heading and gather statistics
+    // that will be printed later
     public static void printDXCCDetailsForHeadings(Map<Integer, List<DXCCEntity>> dxccEntitiesPerHeading, int maxMostWantedRanking, int maxDistance, int halfAntennaBeamWidth, int maxDXCCEntities, HeadingStatisticsCollector statisticsCollector) {
 
         for (Map.Entry<Integer, List<DXCCEntity>> entry : dxccEntitiesPerHeading.entrySet()) {
@@ -70,7 +70,6 @@ public class ResultPrinter {
 
             System.out.println("|---|---|------------------------------------------|--------|------|------------|---------|");
             System.out.println();
-
         }
 
         System.out.println("NOTE: a '*' in the C column indicates a DXCC entity among the " + maxDXCCEntities + " closest ones (up to " + maxDistance + " km)");
@@ -78,7 +77,8 @@ public class ResultPrinter {
         System.out.println();
     }
 
-    // prints up to a maximum number of DXCC entities in increasing distance from the central location
+    // prints up to a maximum number of (the closest) DXCC entities in increasing distance from the central location.
+    // also, collects statistics that will be printed later.
     public static void printClosestDXCCEntities(List<DXCCEntity> dxccList, int maxMostWantedRanking, int maxDistance, int maxDXCCEntities, HeadingStatisticsCollector statisticsCollector) {
 
         System.out.println();
@@ -100,6 +100,7 @@ public class ResultPrinter {
                     entity.distance,
                     (int) entity.bearing));
 
+            // note: there is no 'heading', use a dummy value (0)
             statisticsCollector.addEntity(0, entity);
         }
         System.out.println("|-----|---|------------------------------------------|--------|------|------------|---------|");
@@ -111,7 +112,6 @@ public class ResultPrinter {
     // the main lobes of a dipole are 180 degrees apart, so if we allow a margin of +/- 10 degrees
     // the we hint the user if the headings are 170-190 degrees apart
     public static void printHintsIfHeadingsFormDipoles(List<Integer> headings) {
-        // just a small hint:if two lobes form almost a dipole print it out ;-)
         if (headings.size() > 1) {
             for (int i = 0; i < (headings.size() - 1); i++) {
                 for (int j = i + 1; j < headings.size(); j++) {
