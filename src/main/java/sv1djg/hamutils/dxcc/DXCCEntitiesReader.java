@@ -70,7 +70,6 @@ public class DXCCEntitiesReader {
 
     private final static String COUNTRY_FILE = "countries.txt";
     private final static String MOST_WANTED_FILE = "mostwanted.txt";
-    private final static Predicate<String> validSecondaryPrefix = prefix -> !prefix.isEmpty() && !prefix.contains("[") && !prefix.contains("(") && !prefix.startsWith("=");
 
     @AllArgsConstructor
     @ToString

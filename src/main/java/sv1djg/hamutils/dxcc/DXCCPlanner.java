@@ -66,7 +66,7 @@ public class DXCCPlanner {
 
     private void findMostActiveHeadings(ProgramOptions programOptions, List<DXCCEntity> dxccList) {
         //
-        // cluster all headings up to the maximum number the user requested
+        // cluster all headings to the DXCC entities up to the maximum number the user requested
         //
         List<Integer> listOfHeadings = dxccList
                 .stream()

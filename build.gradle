@@ -6,7 +6,8 @@ plugins {
 group 'sv1djg.hamutils.dxcc'
 version '1.0'
 
-sourceCompatibility = 1.8
+sourceCompatibility = 1.11
+targetCompatibility = 1.11
 
 repositories {
     mavenCentral()

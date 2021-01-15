@@ -102,10 +102,10 @@ public class ProgramOptionsProcessor {
         if (programOptions.getDxccCenter() == null || programOptions.getDxccCenter().isEmpty())
             throw new IllegalArgumentException("the prefix to use for central location cannot be empty or null");
 
-        if (programOptions.getNumberOfBeamings() < 0 || programOptions.getNumberOfBeamings() > 36)
+        if (programOptions.getMode() != ProgramOptions.MODE.EVALUATE && (programOptions.getNumberOfBeamings() < 0 || programOptions.getNumberOfBeamings() > 36))
             throw new IllegalArgumentException("the number of beamings should be realistic (larger than 0 but not larger than 36)");
 
-        if (programOptions.getAvailableBeamings() == null || programOptions.getAvailableBeamings().size() == 0 || programOptions.getAvailableBeamings().size() > 36)
+        if (programOptions.getMode() == ProgramOptions.MODE.EVALUATE && (programOptions.getAvailableBeamings() == null || programOptions.getAvailableBeamings().size() == 0 || programOptions.getAvailableBeamings().size() > 36))
             throw new IllegalArgumentException("the number of beamings should be realistic (larger than 0 but not larger than 36)");
 
         if (programOptions.getAntennaBeamWidth() < 5 || programOptions.getAntennaBeamWidth() > 180)
@@ -122,7 +122,7 @@ public class ProgramOptionsProcessor {
 
 
     public static void showUsage() {
-        System.out.println("DXCC planner v2.0 (by SV1DJG,Feb 2016,2020)");
+        System.out.println("DXCC planner v2.0 (by SV1DJG,Feb 2016-2021)");
         System.out.println("--------------------------------------");
 
         System.out.println("This program may assist in planning your antennas for making the best usage of your (limited) space and still  ");
@@ -148,7 +148,7 @@ public class ProgramOptionsProcessor {
         System.out.println();
         System.out.println("commands:");
         System.out.println();
-        System.out.println("       -nearest 		 display the list of nearest DXCC entities");
+        System.out.println("       -nearest 		     display the list of nearest DXCC entities");
         System.out.println("       -optimal 	         calculate and display the optimal headings");
         System.out.println("       -evaluate 	         evaluate DXCC coverage for specific headings");
         System.out.println();
