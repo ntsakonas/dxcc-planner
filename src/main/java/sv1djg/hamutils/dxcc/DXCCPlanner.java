@@ -84,7 +84,7 @@ public class DXCCPlanner {
                 programOptions.getMaximumNumberOfCountriesToPrint(),
                 statisticsCollector);
 
-        ResultPrinter.printHeadingStatistics(statisticsCollector);
+        ResultPrinter.printStatisticsSummary(statisticsCollector);
         System.out.println();
 
     }
