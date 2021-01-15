@@ -47,7 +47,7 @@ public class ResultPrinter {
         for (Map.Entry<Integer, List<DXCCEntity>> entry : dxccEntitiesPerHeading.entrySet()) {
 
             int heading = entry.getKey().intValue();
-            AntennaBeamingStatistics headingStats = statisticsCollector.headingStats(heading);
+            HeadingStatistics headingStats = statisticsCollector.headingStats(heading);
 
             System.out.println(String.format("DXCC entities around heading of %03d degress (within +/- %d degress from the main heading)", heading, halfAntennaBeamWidth));
 
@@ -66,6 +66,7 @@ public class ResultPrinter {
                         entity.distance,
                         (int) entity.bearing));
 
+                // headingStats.addEntity(entity);
                 headingStats.incrTotalDXCCEntities();
 
                 if (entity.distance <= maxDistance)
@@ -97,7 +98,7 @@ public class ResultPrinter {
         System.out.println("|  #  | R |             DXCC Entity name             | Prefix | Cont |   Distance | Heading |");
         System.out.println("|-----|---|------------------------------------------|--------|------|------------|---------|");
 
-        AntennaBeamingStatistics headingStats = statisticsCollector.headingStats(0);
+        HeadingStatistics headingStats = statisticsCollector.headingStats(0);
 
         int i = 0;
         for (DXCCEntity entity : dxccList) {
@@ -153,7 +154,7 @@ public class ResultPrinter {
         System.out.println("| Heading | Total DXCC | Closest | Rare |");
         System.out.println("|---------|------------|---------|------|");
 
-        for (AntennaBeamingStatistics headingStatistic : statisticsCollector.beamingStatistics()) {
+        for (HeadingStatistics headingStatistic : statisticsCollector.beamingStatistics()) {
             System.out.println(String.format("|   %03d   |    %03d     |   %03d   | %03d  |", headingStatistic.heading,
                     headingStatistic.totalDxccEntitiesCovered,
                     headingStatistic.totalClosestDxccEntitiesCovered,
@@ -169,7 +170,7 @@ public class ResultPrinter {
         int totalClosestCountriesCovered = 0;
         int totalRareCountriesCovered = 0;
 
-        for (AntennaBeamingStatistics headingStatistic : statisticsCollector.beamingStatistics()) {
+        for (HeadingStatistics headingStatistic : statisticsCollector.beamingStatistics()) {
             totalCountriesCovered += headingStatistic.totalDxccEntitiesCovered;
             totalClosestCountriesCovered += headingStatistic.totalClosestDxccEntitiesCovered;
             totalRareCountriesCovered += headingStatistic.totalRareDxccEntitiesCovered;
