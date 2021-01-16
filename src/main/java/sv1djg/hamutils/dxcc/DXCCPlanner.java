@@ -36,7 +36,10 @@ public class DXCCPlanner {
 
     public static void main(String[] args) {
         Optional<ProgramOptions> programOptions = ProgramOptionsProcessor.extractProgramOptions(args);
-        programOptions.ifPresentOrElse(options -> new DXCCPlanner().runAnalysis(options), () -> ProgramOptionsProcessor.showUsage());
+        programOptions.ifPresent(options -> {
+            ProgramInfo.printProgramDetails();
+            new DXCCPlanner().runAnalysis(options);
+        });
     }
 
     public void runAnalysis(ProgramOptions programOptions) {

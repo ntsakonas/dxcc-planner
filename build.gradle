@@ -32,7 +32,8 @@ dependencies {
 jar {
     manifest {
         attributes(
-                'Main-Class': 'sv1djg.hamutils.dxcc.DXCCPlanner'
+                'Main-Class': 'sv1djg.hamutils.dxcc.DXCCPlanner',
+                'Implementation-Version' : version
         )
     }
 

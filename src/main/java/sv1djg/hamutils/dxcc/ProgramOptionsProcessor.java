@@ -46,6 +46,7 @@ public class ProgramOptionsProcessor {
     public static final String NEAREST = "nearest";
     public static final String OPTIMAL = "optimal";
     public static final String EVALUATE = "evaluate";
+    public static final String HELP = "help";
 
 
     public static Optional<ProgramOptions> extractProgramOptions(String[] arguments) {
@@ -60,11 +61,17 @@ public class ProgramOptionsProcessor {
         options.addOption(NEAREST, false, "");
         options.addOption(OPTIMAL, false, "");
         options.addOption(EVALUATE, false, "");
+        options.addOption(HELP, false, "");
 
         CommandLineParser parser = new DefaultParser();
 
         try {
             CommandLine cmd = parser.parse(options, arguments);
+            if (cmd.hasOption(HELP)) {
+                showUsage();
+                return Optional.empty();
+            }
+
             ProgramOptions.ProgramOptionsBuilder builder = ProgramOptions.builder();
             // set defaults
             builder.maximumDistanceForClosest(DEFAULT_DIST_FOR_CLOSEST);
@@ -116,18 +123,19 @@ public class ProgramOptionsProcessor {
                 builder.dxccCenter(cmd.getOptionValue(CENTER).toUpperCase());
             }
 
-            return validate(builder.build());
+            return Optional.of(validate(builder.build()));
 
         } catch (Throwable e) {
 
             System.out.println("ERROR: " + e.getMessage());
+            System.out.println("(run 'dxccplanner -help' for more help)");
             System.out.println();
 
             return Optional.empty();
         }
     }
 
-    private static Optional<ProgramOptions> validate(ProgramOptions programOptions) {
+    private static ProgramOptions validate(ProgramOptions programOptions) {
         if (programOptions.getDxccCenter() == null || programOptions.getDxccCenter().isEmpty())
             throw new IllegalArgumentException("the prefix to use for central location cannot be empty or null");
 
@@ -146,15 +154,12 @@ public class ProgramOptionsProcessor {
         if (programOptions.getMaximumDistanceForClosest() < 1 || programOptions.getMaximumDistanceForClosest() > 15000)
             throw new IllegalArgumentException("the distance to assume nearby countries should be realistic (larger than 1 Km but not larger than 15000)");
 
-        return Optional.of(programOptions);
+        return programOptions;
     }
 
 
-    public static void showUsage() {
-        System.out.println("DXCC planner v2.0 (by SV1DJG, Copyright (C) Feb 2016-2021)");
-        System.out.println("This program comes with ABSOLUTELY NO WARRANTY;");
-        System.out.println("This is free software, and you are welcome to redistribute it under certain conditions;");
-        System.out.println("----------------------------------------------------------");
+    private static void showUsage() {
+        ProgramInfo.printProgramDetails();
 
         System.out.println("This program may assist in planning your antennas for making the best usage of your (limited) space and still  ");
         System.out.println("maximise your opportunities to work as many DXCC entities as possible.You can use it to calculate all the nearest  ");
@@ -168,6 +173,7 @@ public class ProgramOptionsProcessor {
         System.out.println();
         System.out.println("options:");
         System.out.println();
+        System.out.println("       -" + HELP + "                 shows this help screen");
         System.out.println("       -" + LIMIT + " LIMIT          set upper limit for nearest countries list print (default is 150)");
         System.out.println("       -" + DISTANCE + " DISTANCE    set maximum distance considered as 'near-by' (default is 6500 Km)");
         System.out.println("       -" + HEADINGS + " HEADINGS    set number of headings to use for optimal calculation (default is 2)");
