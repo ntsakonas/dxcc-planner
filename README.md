@@ -10,7 +10,7 @@ as possible given how many directional antennas you can put up.
 NOTE: The program does not provide propagation predictions. It takes into consideration only geographical position of the DXCC entities in order to calculate their relative position to you location and reachability. 
 
 ## How to run it
-Download the pre-build `jar` from the releases, make sure you have Java 1.11 or later installed and run it on a terminal like this:
+Download the pre-built `jar` from the releases, make sure you have Java 1.11 or later installed and run it on a terminal like this:
 ```
 java -jar dxcc-planner-2.0.jar -help
 ```
