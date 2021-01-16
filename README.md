@@ -156,7 +156,7 @@ which will print by default the 150 closest DXCC countries (you can override the
 ### Example outputs
 Nearest DXCC entities
 ```
-$ ./dxccplanner.jar -nearest -center G 
+$ java -jar dxcc-planner-2.0.jar -nearest -center G 
 Current settings:
 -----------------
 Central DXCC entity       : G (England)
@@ -828,7 +828,3 @@ Summary:
  Total rare DXCC reachable        : 027
  Total continent(s) reachable     :   6 [EU, AS, NA, OC, AF, SA]
 ```
-
-
-
-
