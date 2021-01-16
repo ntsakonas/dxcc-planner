@@ -28,7 +28,7 @@ import java.util.stream.Stream;
 public class ProgramOptionsProcessor {
 
     // during processing we take into account only the most rare countries
-    private final static int MOST_WANTED_RANKING = 50;
+    private final static int MOST_WANTED_RANKING = 100;
     // this is the distance we assume that is easily reachable (well within 2-hops)
     private static final int DEFAULT_DIST_FOR_CLOSEST = 6500;
     // a limit for display (where applicable)
