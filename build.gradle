@@ -33,10 +33,14 @@ jar {
     manifest {
         attributes(
                 'Main-Class': 'sv1djg.hamutils.dxcc.DXCCPlanner',
-                'Implementation-Version' : version
+                'Implementation-Version': version
         )
     }
 
+    exclude('ntsakonas/illumination/**')
+    exclude('ntsakonas/propagation/**')
+    exclude('ntsakonas/types/**')
+    exclude('ntsakonas/utils/GridLocator*')
     from {
         configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
     }
