@@ -107,7 +107,7 @@ public class DXCCEntitiesReader {
                         .map(line -> line.split(","))
                         .map(entityDetails ->
                                 // NOTE:: the latitude is reversed on creation of the entity, as the coutnry file contains POSITIVE WEST longitudes
-                                new DXCCCountry(entityDetails[0].toUpperCase(), entityDetails[1], entityDetails[3], Double.parseDouble(entityDetails[6]), -Double.parseDouble(entityDetails[7]))
+                                new DXCCCountry(entityDetails[0].replace("*","").toUpperCase(), entityDetails[1], entityDetails[3], Double.parseDouble(entityDetails[6]), -Double.parseDouble(entityDetails[7]))
                         )
                         .collect(Collectors.toMap(entity -> entity.prefix, Function.identity()));
             } catch (Throwable e) {
